@@ -83,21 +83,21 @@ export default function AdminPage() {
 
       {/* Main content area for displaying selected admin pages */}
       <div className="w-[80%] max-h-[100vh] overflow-y-scroll bg-slate-500 flex">
-        <Routes>
+        <Routes path="/*">
           {/* Route for Admin Bookings */}
-          <Route path="/admin/bookings" element={<AdminBookings />} />
+          <Route path="/bookings" element={<AdminBookings />} />
           {/* Route for Admin Rooms */}
-          <Route path="/admin/rooms" element={<AdminRooms />} />
+          <Route path="/rooms" element={<AdminRooms />} />
           {/* Route for Admin Users */}
-          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/users" element={<AdminUsers />} />
           {/* Route for Admin Categories */}
-          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/categories" element={<AdminCategories />} />
           {/* Route for Admin Feedback */}
-          <Route path="/admin/feedback" element={<AdminFeedback />} />
+          <Route path="/feedback" element={<AdminFeedback />} />
           {/* Route for Admin Tickets */}
-          <Route path="/admin/tickets" element={<AdminTickets />} />
+          <Route path="/tickets" element={<AdminTickets />} />
           {/* Route for Admin Gallery Items */}
-          <Route path="/admin/gallery-items" element={<AdminGalleryItems />} />
+          <Route path="/gallery-items" element={<AdminGalleryItems />} />
         </Routes>
       </div>
     </div>
