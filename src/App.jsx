@@ -5,6 +5,7 @@ import HomePage from "./pages/client-page/homePage";
 import Test from "./components/test/test";
 import LoginPage from "./pages/login/login";
 import CategoriesPage from "./pages/client-page/categories";
+import RoomsPage from "./pages/client-page/rooms";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
 <Route path="/test/*" element={<Test/>}/>
 <Route path="/login/*" element={<LoginPage/>}/>
 <Route path="/categories/*" element={<CategoriesPage/>}/>
+<Route path="/rooms/*" element={<RoomsPage/>}/>
 </Routes>
 </BrowserRouter>
   );
