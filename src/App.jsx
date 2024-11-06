@@ -7,10 +7,12 @@ import LoginPage from "./pages/login/login";
 import CategoriesPage from "./pages/client-page/categories";
 import RoomsPage from "./pages/client-page/rooms";
 import Test1 from "./components/test/text1";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
 <BrowserRouter>
+<Toaster position="top-right" reverseOrder={false} />
 <Routes path="/*">
 <Route path="/" element={<HomePage/>}/>
 <Route path="/admin/*" element={<AdminPage/>}/>

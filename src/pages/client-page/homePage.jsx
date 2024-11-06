@@ -7,7 +7,6 @@ export default function HomePage() {
       <div className="w-full h-screen bg-blue-300 flex flex-col items-center p-[10px]">
         <div className="w-[700px] h-[100px] border border-white bg-white rounded-lg flex justify-center items-center">
           <input type="date" />
-          <input type="date" />
 
           <select>
             <option value="">1</option>

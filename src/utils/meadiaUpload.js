@@ -22,9 +22,11 @@ export default async function uploadMedia(file) {
         const downloadURL = await getDownloadURL(fileRef);
         console.log("File available at", downloadURL);
         
-        // Here you can do something with the download URL (e.g., save it to the database)
+        // Return the download URL
+        return downloadURL;
 
     } catch (error) {
         console.error("Upload failed:", error);
+        return null; // Return null on error
     }
 }
