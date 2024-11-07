@@ -3,13 +3,16 @@ import { FaTicketSimple } from "react-icons/fa6";
 import { MdCategory, MdFeedback, MdRoomPreferences } from "react-icons/md";
 import { RiGalleryFill } from "react-icons/ri";
 import { Link, Route, Routes } from "react-router-dom";
-import AdminBookings from "../admin/adminBookings";
-import AdminRooms from "../admin/adminRooms";
-import AdminUsers from "../admin/adminUsers";
-import AdminFeedback from "../admin/adminFeedback";
-import AdminTickets from "../admin/adminTickets";
-import AdminGalleryItems from "../admin/adminGalleryItems";
-import AdminCategories from "../admin/adminCategories";
+import AdminBookings from "../admin/bookings/adminBookings";
+import AdminRooms from "../admin/rooms/adminRooms";
+import AdminUsers from "../admin/users/adminUsers";
+import AdminFeedback from "../admin/feedback/adminFeedback";
+import AdminTickets from "../admin/adminTickets/adminTickets";
+import AdminGalleryItems from "../admin/galleryItems/adminGalleryItems";
+import AdminCategories from "../admin/categories/adminCategories";
+import AddCategoryForm from "../admin/addCategoryForm/addCategoryForm";
+
+
 
 export default function AdminPage() {
   return (
@@ -92,6 +95,8 @@ export default function AdminPage() {
           <Route path="/users" element={<AdminUsers />} />
           {/* Route for Admin Categories */}
           <Route path="/categories" element={<AdminCategories />} />
+          {/* Route for adding a new category*/} 
+          <Route path="/add-category" element={<AddCategoryForm />} />
           {/* Route for Admin Feedback */}
           <Route path="/feedback" element={<AdminFeedback />} />
           {/* Route for Admin Tickets */}

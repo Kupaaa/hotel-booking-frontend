@@ -1,11 +1,15 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { IoMdAdd } from "react-icons/io";
+import { MdDelete } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]); // State to hold fetched categories
   const [categoryIsLoaded, setCategoryIsLoaded] = useState(false); // State to track loading status
   const [error, setError] = useState(null); // State to track errors
+  const navigate = useNavigate();
 
   // Fetch categories when the component mounts
   useEffect(() => {
@@ -51,10 +55,11 @@ export default function AdminCategories() {
         },
       });
 
-      setCategories((prevCategories) =>
-        prevCategories.filter((category) => category.name !== name) // Update state to remove deleted category
+      setCategories(
+        (prevCategories) =>
+          prevCategories.filter((category) => category.name !== name) // Update state to remove deleted category
       );
-      
+
       toast.success("Item deleted successfully"); // Show success toast
     } catch {
       toast.error("Failed to delete item. Please try again."); // Show error toast
@@ -73,8 +78,21 @@ export default function AdminCategories() {
     return <div>No categories available.</div>; // Handle case where no categories are returned
   }
 
+  function handlePlusClick() {
+    // window.location.href = "/admin/add-category"
+    navigate("/admin/add-category");
+  }
+
   return (
     <div className="container mx-auto p-5">
+      <button
+        className="bg-red-600 w-[60px] h-[60px] rounded-full text-5xl flex justify-center items-center fixed bottom-5 right-5"
+        onClick={() => {
+          handlePlusClick();
+        }}
+      >
+        <IoMdAdd />
+      </button>
       <h1 className="text-3xl font-bold mb-6 text-center">Category Table</h1>
       <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
         <thead>
@@ -121,7 +139,7 @@ export default function AdminCategories() {
                   className="ml-4 px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
                   aria-label={`Delete category: ${category.name}`}
                 >
-                  Delete
+                  <MdDelete />
                 </button>
               </td>
             </tr>
