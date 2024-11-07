@@ -1,40 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import uploadMedia from "../../../utils/meadiaUpload";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import useAuth from "../../../hooks/useAuth";
 
 export default function AddCategoryForm() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState(0);
-  const [features, setFeatures] = useState([""]); // Start with one empty feature
+  const [features, setFeatures] = useState([""]);
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Handle adding a new feature
+  const isLoading = useAuth();
+
   function handleAddFeature() {
-    // Check if the last feature input is empty before adding a new feature
     if (features[features.length - 1] !== "") {
-      setFeatures([...features, ""]); // Adds an empty feature input
+      setFeatures([...features, ""]);
     } else {
       toast.error("Please fill the current feature before adding a new one.");
     }
   }
 
-  // Handle removing a feature
   function handleRemoveFeature(index) {
     const updatedFeatures = features.filter((_, i) => i !== index);
     setFeatures(updatedFeatures);
   }
 
-  // Handle feature change
   function handleFeatureChange(index, value) {
     const updatedFeatures = [...features];
     updatedFeatures[index] = value;
     setFeatures(updatedFeatures);
   }
 
-  // Handle form submission
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -42,57 +42,72 @@ export default function AddCategoryForm() {
       return toast.error("Please complete all fields before submitting.");
     }
 
-    setLoading(true); // Start loading during image upload and form submission
+    // Validate price
+    if (isNaN(price) || price <= 0) {
+      return toast.error("Please enter a valid price.");
+    }
+
+    if (features.some((feature) => feature === "")) {
+      return toast.error("Please fill all features.");
+    }
+
+    // Check if the selected file is an image
+    if (image && !image.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      // Upload image and get the URL before proceeding
       const imageUrl = await uploadMedia(image);
       if (!imageUrl) {
         setLoading(false);
         return toast.error("Image upload failed. Please try again.");
       }
 
-      // Prepare the new category data
       const newCategory = {
         name,
         price,
         features,
         description,
-        image: imageUrl, // Use the uploaded image URL
+        image: imageUrl,
       };
 
-      const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`; // Backend API URL
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`;
 
-      // Fetch the token from local storage (or another source if applicable)
       const token = localStorage.getItem("token");
 
       if (!token) {
         setLoading(false);
-        return toast.error("Authentication required. Please log in.");
+        toast.error("Authentication required. Please log in.");
+        navigate("/login");
+        return;
       }
 
-      // Send data to the backend using a POST request with Axios
       const response = await axios.post(url, newCategory, {
         headers: {
-          Authorization: `Bearer ${token}`, // Include token in the request header
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      // Show success toast
       toast.success(response.data.message);
 
-      // Optionally clear the form after successful submission
       setName("");
       setPrice(0);
-      setFeatures([""]); // Reset to one empty feature
+      setFeatures([""]);
       setDescription("");
       setImage("");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Error submitting category, please try again.");
     } finally {
-      setLoading(false); // Reset loading state after form submission
+      setLoading(false);
     }
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
   return (

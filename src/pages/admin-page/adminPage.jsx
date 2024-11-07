@@ -2,7 +2,7 @@ import { FaBookmark, FaUserCog } from "react-icons/fa";
 import { FaTicketSimple } from "react-icons/fa6";
 import { MdCategory, MdFeedback, MdRoomPreferences } from "react-icons/md";
 import { RiGalleryFill } from "react-icons/ri";
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, useNavigate } from "react-router-dom";
 import AdminBookings from "../admin/bookings/adminBookings";
 import AdminRooms from "../admin/rooms/adminRooms";
 import AdminUsers from "../admin/users/adminUsers";
@@ -11,10 +11,29 @@ import AdminTickets from "../admin/adminTickets/adminTickets";
 import AdminGalleryItems from "../admin/galleryItems/adminGalleryItems";
 import AdminCategories from "../admin/categories/adminCategories";
 import AddCategoryForm from "../admin/addCategoryForm/addCategoryForm";
-
-
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 export default function AdminPage() {
+  const [isLoading, setIsLoading] = useState(true); // Loading state to prevent rendering the page
+  const navigate = useNavigate();
+
+  // Check for token when the page loads
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication required. Please log in.");
+      navigate("/login"); // Redirect to login page if no token exists
+    } else {
+      setIsLoading(false); // Stop loading if token is found
+    }
+  }, [navigate]);
+
+  if (isLoading) {
+    // Optionally display a loading spinner or message while checking the token
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="h-[100vh] max-h-[100vh] overflow-hidden flex">
       {/* Sidebar for navigation */}
@@ -86,7 +105,7 @@ export default function AdminPage() {
 
       {/* Main content area for displaying selected admin pages */}
       <div className="w-[80%] max-h-[100vh] overflow-y-scroll bg-slate-500 flex">
-        <Routes path="/*">
+        <Routes>
           {/* Route for Admin Bookings */}
           <Route path="/bookings" element={<AdminBookings />} />
           {/* Route for Admin Rooms */}
