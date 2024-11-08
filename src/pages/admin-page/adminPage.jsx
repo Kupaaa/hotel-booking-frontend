@@ -2,7 +2,7 @@ import { FaBookmark, FaUserCog } from "react-icons/fa";
 import { FaTicketSimple } from "react-icons/fa6";
 import { MdCategory, MdFeedback, MdRoomPreferences } from "react-icons/md";
 import { RiGalleryFill } from "react-icons/ri";
-import { Link, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import AdminBookings from "../admin/bookings/adminBookings";
 import AdminRooms from "../admin/rooms/adminRooms";
 import AdminUsers from "../admin/users/adminUsers";
@@ -11,27 +11,21 @@ import AdminTickets from "../admin/adminTickets/adminTickets";
 import AdminGalleryItems from "../admin/galleryItems/adminGalleryItems";
 import AdminCategories from "../admin/categories/adminCategories";
 import AddCategoryForm from "../admin/addCategoryForm/addCategoryForm";
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
+import useAuth from "../../hooks/useAuth";
+
 
 export default function AdminPage() {
-  const [isLoading, setIsLoading] = useState(true); // Loading state to prevent rendering the page
-  const navigate = useNavigate();
-
-  // Check for token when the page loads
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Authentication required. Please log in.");
-      navigate("/login"); // Redirect to login page if no token exists
-    } else {
-      setIsLoading(false); // Stop loading if token is found
-    }
-  }, [navigate]);
+  // Use the custom authentication hook
+  const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
     // Optionally display a loading spinner or message while checking the token
     return <div>Loading...</div>;
+  }
+
+  // If not authenticated, prevent rendering of the admin page
+  if (!isAuthenticated) {
+    return null; // Alternatively, you could render a "Not Authorized" message
   }
 
   return (
@@ -114,7 +108,7 @@ export default function AdminPage() {
           <Route path="/users" element={<AdminUsers />} />
           {/* Route for Admin Categories */}
           <Route path="/categories" element={<AdminCategories />} />
-          {/* Route for adding a new category*/} 
+          {/* Route for adding a new category */}
           <Route path="/add-category" element={<AddCategoryForm />} />
           {/* Route for Admin Feedback */}
           <Route path="/feedback" element={<AdminFeedback />} />
