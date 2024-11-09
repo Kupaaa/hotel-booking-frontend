@@ -52,13 +52,20 @@ export default function AddCategoryForm() {
     if (e.target.files && e.target.files[0]) {
       const selectedImage = e.target.files[0];
       // Validate image type and size
-      if (!selectedImage.type.startsWith("image/") || selectedImage.size > 5 * 1024 * 1024) {
+      if (
+        !selectedImage.type.startsWith("image/") ||
+        selectedImage.size > 5 * 1024 * 1024
+      ) {
         toast.error("Please upload a valid image file under 5MB.");
         return;
       }
       setImage(selectedImage);
       const previewUrl = URL.createObjectURL(selectedImage);
       setImagePreview(previewUrl);
+    } else {
+      // If the user cancels the file input, reset image and preview
+      setImage(null);
+      setImagePreview(null);
     }
   };
 
@@ -77,7 +84,13 @@ export default function AddCategoryForm() {
     e.preventDefault();
 
     // Validation to ensure all required fields are filled
-    if (!name || !price || !description || !image || features.some((feature) => feature === "")) {
+    if (
+      !name ||
+      !price ||
+      !description ||
+      !image ||
+      features.some((feature) => feature === "")
+    ) {
       return toast.error("Please complete all fields before submitting.");
     }
 
@@ -93,7 +106,13 @@ export default function AddCategoryForm() {
         return toast.error("Image upload failed. Please try again.");
       }
 
-      const newCategory = { name, price, features, description, image: imageUrl };
+      const newCategory = {
+        name,
+        price,
+        features,
+        description,
+        image: imageUrl,
+      };
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`;
       const token = localStorage.getItem("token");
 

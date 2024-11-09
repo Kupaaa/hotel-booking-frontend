@@ -12,6 +12,7 @@ import AdminGalleryItems from "../admin/galleryItems/adminGalleryItems";
 import AdminCategories from "../admin/categories/adminCategories";
 import AddCategoryForm from "../admin/addCategoryForm/addCategoryForm";
 import useAuth from "../../hooks/useAuth";
+import UpdateCategoryForm from "../admin/updateCategoryForm/updateCategoryForm";
 
 
 export default function AdminPage() {
@@ -110,6 +111,8 @@ export default function AdminPage() {
           <Route path="/categories" element={<AdminCategories />} />
           {/* Route for adding a new category */}
           <Route path="/add-category" element={<AddCategoryForm />} />
+          {/* Route for update category */}
+          <Route path="/update-category" element={<UpdateCategoryForm />} />
           {/* Route for Admin Feedback */}
           <Route path="/feedback" element={<AdminFeedback />} />
           {/* Route for Admin Tickets */}
