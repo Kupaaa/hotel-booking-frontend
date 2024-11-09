@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import uploadMedia from "../../../utils/meadiaUpload";
 import axios from "axios";
-import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
+import {
+  showErrorMessage,
+  showSuccessMessage,
+} from "../../../utils/confirmDialog";
 
-// AddCategoryForm component - manages form state and submission for adding a new category
 export default function AddCategoryForm() {
-  // State variables to hold form input values
+  // State variables to hold form data
   const [name, setName] = useState("");
   const [price, setPrice] = useState(0);
   const [features, setFeatures] = useState([]);
@@ -17,59 +19,69 @@ export default function AddCategoryForm() {
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
 
-  const navigate = useNavigate();
-  const { isLoading: authLoading } = useAuth();
+  const imageInputRef = useRef(null); // Reference for the file input
+  const navigate = useNavigate(); // For redirecting the user
+  const { isLoading: authLoading } = useAuth(); // To check if authentication is loading
 
-  // Cleanup function to revoke image preview URL on component unmount
+  // Clean up the image preview URL when the component unmounts
   useEffect(() => {
     return () => {
       if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
+        URL.revokeObjectURL(imagePreview); // Free up memory
       }
     };
   }, [imagePreview]);
 
-  // Adds a new, empty feature to the list
-  function handleAddFeature() {
-    setFeatures([...features, ""]);
-  }
+  // Function to handle adding new features to the features list
+  const handleAddFeature = () => {
+    if (features[features.length - 1] !== "") {
+      // Only add a new feature if the last feature input is not empty
+      setFeatures([...features, ""]);
+    } else {
+      // Warn the user if they try to add a feature before completing the previous one
+      showErrorMessage(
+        "Incomplete Feature",
+        "Please fill out the current feature before adding a new one."
+      );
+    }
+  };
 
-  // Removes a feature from the list based on its index
-  function handleRemoveFeature(index) {
-    const updatedFeatures = features.filter((_, i) => i !== index);
-    setFeatures(updatedFeatures);
-  }
+  // Function to handle removing a feature
+  const handleRemoveFeature = (index) => {
+    setFeatures(features.filter((_, i) => i !== index)); // Remove feature by index
+  };
 
-  // Updates the value of a specific feature based on its index
-  function handleFeatureChange(index, value) {
-    const updatedFeatures = [...features];
-    updatedFeatures[index] = value;
-    setFeatures(updatedFeatures);
-  }
+  // Function to update a feature when the user changes the input
+  const handleFeatureChange = (index, value) => {
+    setFeatures(features.map((feature, i) => (i === index ? value : feature)));
+  };
 
-  // Handles image file selection and creates a preview URL
+  // Function to handle image upload and set preview
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const selectedImage = e.target.files[0];
-      // Validate image type and size
+      // Validate the selected image type and size
       if (
         !selectedImage.type.startsWith("image/") ||
-        selectedImage.size > 5 * 1024 * 1024
+        selectedImage.size > 5 * 1024 * 1024 // Maximum 5MB
       ) {
-        toast.error("Please upload a valid image file under 5MB.");
+        showErrorMessage(
+          "Invalid Image",
+          "Please upload a valid image file under 5MB."
+        );
         return;
       }
       setImage(selectedImage);
-      const previewUrl = URL.createObjectURL(selectedImage);
+      const previewUrl = URL.createObjectURL(selectedImage); // Create preview URL
       setImagePreview(previewUrl);
     } else {
-      // If the user cancels the file input, reset image and preview
+      // Reset image if no file is selected
       setImage(null);
       setImagePreview(null);
     }
   };
 
-  // Resets form fields to their initial states
+  // Reset the form to its initial state
   const resetForm = () => {
     setName("");
     setPrice(0);
@@ -77,13 +89,16 @@ export default function AddCategoryForm() {
     setDescription("");
     setImage(null);
     setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ""; // Clear file input
+    }
   };
 
-  // Handles form submission, including validation, image upload, and category creation
-  async function handleSubmit(e) {
+  // Function to handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation to ensure all required fields are filled
+    // Form validation before submitting
     if (
       !name ||
       !price ||
@@ -91,21 +106,29 @@ export default function AddCategoryForm() {
       !image ||
       features.some((feature) => feature === "")
     ) {
-      return toast.error("Please complete all fields before submitting.");
+      showErrorMessage(
+        "Incomplete Form",
+        "Please complete all fields before submitting."
+      );
+      return;
     }
 
-    setLoading(true);
+    setLoading(true); // Set loading state while submitting the form
     try {
-      setImageUploading(true);
-      const imageUrl = await uploadMedia(image);
+      setImageUploading(true); // Set image uploading state
+      const imageUrl = await uploadMedia(image); // Upload the image
 
-      // Check if image upload was successful
       if (!imageUrl) {
         setLoading(false);
         setImageUploading(false);
-        return toast.error("Image upload failed. Please try again.");
+        showErrorMessage(
+          "Image Upload Failed",
+          "Image upload failed. Please try again."
+        );
+        return;
       }
 
+      // Prepare the data to send to the backend
       const newCategory = {
         name,
         price,
@@ -113,48 +136,60 @@ export default function AddCategoryForm() {
         description,
         image: imageUrl,
       };
-      const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`;
-      const token = localStorage.getItem("token");
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`; // Backend URL
+      const token = localStorage.getItem("token"); // Get the authentication token
 
-      // Redirect to login if token is not found
       if (!token) {
         setLoading(false);
         setImageUploading(false);
-        toast.error("Authentication required. Please log in.");
-        navigate("/login");
+        showErrorMessage(
+          "Authentication Required",
+          "Authentication required. Please log in."
+        );
+        navigate("/login"); // Redirect to login if no token
         return;
       }
 
-      // Submit new category to backend
+      // Send the data to the server
       const response = await axios.post(url, newCategory, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }, // Send token in the header
       });
 
-      toast.success(response.data.message);
-      resetForm();
+      showSuccessMessage("Category Added", response.data.message); // Success message
+      resetForm(); // Reset the form after submission
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("Error submitting category, please try again.");
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        showErrorMessage("Submission Failed", error.response.data.message);
+      } else {
+        showErrorMessage(
+          "Submission Failed",
+          "Error submitting category, please try again."
+        );
+      }
     } finally {
-      setLoading(false);
-      setImageUploading(false);
+      setLoading(false); // Reset loading state
+      setImageUploading(false); // Reset image uploading state
     }
-  }
+  };
 
-  // Show loading indicator if authentication is in progress
+  // If authentication is still loading, show a loading message
   if (authLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    // Main container for the form
     <div className="flex justify-center items-center w-full min-h-screen p-4">
       <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6">
         <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
           Add New Category
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Category Name input field */}
+          {/* Category Name Input */}
           <div>
             <label className="block text-gray-700">Category Name</label>
             <input
@@ -167,7 +202,7 @@ export default function AddCategoryForm() {
             />
           </div>
 
-          {/* Price input field */}
+          {/* Price Input */}
           <div>
             <label className="block text-gray-700">Price</label>
             <input
@@ -181,7 +216,7 @@ export default function AddCategoryForm() {
             />
           </div>
 
-          {/* Features input fields with Add and Remove functionality */}
+          {/* Features List */}
           <div>
             <label className="block text-gray-700">Features</label>
             {features.map((feature, index) => (
@@ -212,7 +247,7 @@ export default function AddCategoryForm() {
             </button>
           </div>
 
-          {/* Description input field */}
+          {/* Description Input */}
           <div>
             <label className="block text-gray-700">Description</label>
             <textarea
@@ -224,35 +259,31 @@ export default function AddCategoryForm() {
             />
           </div>
 
-          {/* Image input field with preview display */}
+          {/* Image Upload */}
           <div>
-            <label className="block text-gray-700">Image</label>
+            <label className="block text-gray-700">Upload Image</label>
             <input
               type="file"
               onChange={handleImageChange}
-              accept="image/*"
+              ref={imageInputRef}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
             {imagePreview && (
-              <div className="mt-4">
-                <img
-                  src={imagePreview}
-                  alt="Image Preview"
-                  className="w-full max-h-60 rounded-lg shadow-lg"
-                />
-              </div>
+              <img
+                src={imagePreview}
+                alt="Image Preview"
+                className="mt-4 w-full max-h-64 object-cover rounded-lg"
+              />
             )}
           </div>
 
-          {/* Submit button with loading indicator */}
-          <div>
+          {/* Submit Button */}
+          <div className="flex justify-center">
             <button
               type="submit"
               disabled={loading || imageUploading}
-              className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200 ${
-                (loading || imageUploading) && "opacity-50 cursor-not-allowed"
-              }`}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 w-full"
             >
               {loading || imageUploading ? "Uploading..." : "Add Category"}
             </button>

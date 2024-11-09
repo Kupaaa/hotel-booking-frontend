@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 
 // Custom hook for authentication and authorization
@@ -18,14 +17,12 @@ const useAuth = () => {
 
       // Check if the token is expired
       if (decoded.exp < currentTime) {
-        toast.error("Session expired. Please log in again.");
         navigate("/login"); // Redirect to login if token is expired
         return false;
       }
 
       // Check if the user is an admin
       if (decoded.type !== "admin") {
-        toast.error("You must be an admin to access this page.");
         navigate("/"); // Redirect to homepage if not an admin
         return false;
       }
@@ -34,7 +31,6 @@ const useAuth = () => {
       return true;
     } catch (error) {
       console.error("Token decoding error:", error); // Log any decoding errors
-      toast.error("Invalid token. Please log in again.");
       navigate("/login"); // Redirect to login if token is invalid
       return false;
     }
@@ -46,7 +42,6 @@ const useAuth = () => {
 
     // If no token is found, navigate to login page
     if (!token) {
-      toast.error("Authentication required. Please log in.");
       navigate("/login");
     } else {
       // If token exists, check its validity

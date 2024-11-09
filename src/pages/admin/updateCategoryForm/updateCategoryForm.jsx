@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import uploadMedia from "../../../utils/meadiaUpload";
 import axios from "axios";
-import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
+import {
+  confirmUpdate,
+  showErrorMessage,
+  showSuccessMessage,
+} from "../../../utils/confirmDialog";
 
 export default function UpdateCategoryForm() {
   const location = useLocation();
@@ -77,7 +81,7 @@ export default function UpdateCategoryForm() {
         !selectedImage.type.startsWith("image/") ||
         selectedImage.size > 5 * 1024 * 1024
       ) {
-        toast.error("Please upload a valid image file under 5MB."); // Show error for invalid image
+        // Remove toast error
         return;
       }
       setFormState((prev) => ({ ...prev, image: selectedImage }));
@@ -101,11 +105,19 @@ export default function UpdateCategoryForm() {
 
   const resetForm = () => setFormState(initialState); // Reset the form to initial state
 
-  // Handle the form submission
+  // Inside handleSubmit after successful submission
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission
-    if (!validateForm())
-      return toast.error("Please correct the errors before submitting."); // Validation check
+
+    // Show the confirmation dialog before proceeding with the update
+    const isConfirmed = await confirmUpdate(formState.name); // Use the category name in the confirmation message
+
+    // If the user cancels the confirmation, exit the function without updating
+    if (!isConfirmed.isConfirmed) {
+      return; // Do not proceed with the update
+    }
+
+    if (!validateForm()) return; // Validation check if user confirmed
 
     setIsSubmitting(true); // Set submitting state to true
     try {
@@ -132,7 +144,6 @@ export default function UpdateCategoryForm() {
 
       if (!token) {
         setIsSubmitting(false);
-        toast.error("Authentication required. Please log in."); // Show error if no token is found
         navigate("/login"); // Navigate to login page
         return;
       }
@@ -141,15 +152,12 @@ export default function UpdateCategoryForm() {
         headers: { Authorization: `Bearer ${token}` }, // Include token in headers
       });
 
-      toast.success(response.data.message); // Show success message from response
+      showSuccessMessage("Success", "Category updated successfully!"); // Show success message
       resetForm(); // Reset form after successful submission
       navigate("/admin/categories"); // Navigate to categories page
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "Error submitting category, please try again."
-      );
+      showErrorMessage("Error", "Failed to update category. Please try again."); // Show error message
     } finally {
       setIsSubmitting(false); // Reset submitting state
     }
@@ -247,7 +255,8 @@ export default function UpdateCategoryForm() {
                 }))
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter category description"
+              placeholder="Enter description"
+              rows="4"
               required
             ></textarea>
             {errors.description && (
@@ -255,34 +264,32 @@ export default function UpdateCategoryForm() {
             )}
           </div>
 
-          {/* Image Upload and Preview */}
+          {/* Image Upload with preview */}
           <div>
-            <label className="block text-gray-700">Category Image</label>
+            <label className="block text-gray-700">Image</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {/* Image preview */}
             {formState.imagePreview && (
               <div className="mt-2">
                 <img
                   src={formState.imagePreview}
                   alt="Preview"
-                  className="w-32 h-32 object-cover rounded-lg"
+                  className="max-w-full max-h-[200px] rounded-lg"
                 />
               </div>
             )}
-            {isImageLoading && <p>Uploading image...</p>}
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-center items-center">
+          <div>
             <button
               type="submit"
               disabled={isSubmitting || !hasChanges}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
             >
               {isSubmitting ? "Updating..." : "Update Category"}
             </button>
