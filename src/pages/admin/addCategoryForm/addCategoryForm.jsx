@@ -18,6 +18,8 @@ export default function AddCategoryForm() {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
+  const [hasChanges, setHasChanges] = useState(false); // Track if the form has changes
 
   const imageInputRef = useRef(null); // Reference for the file input
   const navigate = useNavigate(); // For redirecting the user
@@ -32,28 +34,28 @@ export default function AddCategoryForm() {
     };
   }, [imagePreview]);
 
-  // Function to handle adding new features to the features list
-  const handleAddFeature = () => {
-    if (features[features.length - 1] !== "") {
-      // Only add a new feature if the last feature input is not empty
-      setFeatures([...features, ""]);
-    } else {
-      // Warn the user if they try to add a feature before completing the previous one
-      showErrorMessage(
-        "Incomplete Feature",
-        "Please fill out the current feature before adding a new one."
-      );
-    }
+  // Handle changes to features input, add space after comma
+  const handleFeaturesChange = (e) => {
+    let value = e.target.value;
+    // Automatically add a space after each comma
+    value = value.replace(/,\s*/g, ", "); // Ensures there's always a space after commas
+    setFeatures(value); // Update the state with the new value
+    setHasChanges(true); // Mark the form as changed
   };
 
-  // Function to handle removing a feature
-  const handleRemoveFeature = (index) => {
-    setFeatures(features.filter((_, i) => i !== index)); // Remove feature by index
+  const handleNameChange = (e) => {
+    setName(e.target.value);
+    setHasChanges(true);
   };
 
-  // Function to update a feature when the user changes the input
-  const handleFeatureChange = (index, value) => {
-    setFeatures(features.map((feature, i) => (i === index ? value : feature)));
+  const handlePriceChange = (e) => {
+    setPrice(Number(e.target.value));
+    setHasChanges(true);
+  };
+
+  const handleDescriptionChange = (e) => {
+    setDescription(e.target.value);
+    setHasChanges(true);
   };
 
   // Function to handle image upload and set preview
@@ -74,10 +76,12 @@ export default function AddCategoryForm() {
       setImage(selectedImage);
       const previewUrl = URL.createObjectURL(selectedImage); // Create preview URL
       setImagePreview(previewUrl);
+      setHasChanges(true); // Mark the form as changed
     } else {
       // Reset image if no file is selected
       setImage(null);
       setImagePreview(null);
+      setHasChanges(true);
     }
   };
 
@@ -92,24 +96,21 @@ export default function AddCategoryForm() {
     if (imageInputRef.current) {
       imageInputRef.current.value = ""; // Clear file input
     }
+    setHasChanges(false); // Reset form change state
   };
 
   // Function to handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true); // Start submitting
 
     // Form validation before submitting
-    if (
-      !name ||
-      !price ||
-      !description ||
-      !image ||
-      features.some((feature) => feature === "")
-    ) {
+    if (!name || !price || !description || !image || features.length === 0) {
       showErrorMessage(
         "Incomplete Form",
         "Please complete all fields before submitting."
       );
+      setIsSubmitting(false);
       return;
     }
 
@@ -132,7 +133,7 @@ export default function AddCategoryForm() {
       const newCategory = {
         name,
         price,
-        features,
+        features, // Send the features as an array
         description,
         image: imageUrl,
       };
@@ -147,6 +148,7 @@ export default function AddCategoryForm() {
           "Authentication required. Please log in."
         );
         navigate("/login"); // Redirect to login if no token
+        setIsSubmitting(false);
         return;
       }
 
@@ -174,6 +176,7 @@ export default function AddCategoryForm() {
     } finally {
       setLoading(false); // Reset loading state
       setImageUploading(false); // Reset image uploading state
+      setIsSubmitting(false); // End submission state
     }
   };
 
@@ -195,7 +198,7 @@ export default function AddCategoryForm() {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter category name"
               required
@@ -208,7 +211,7 @@ export default function AddCategoryForm() {
             <input
               type="number"
               value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
+              onChange={handlePriceChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter price"
               min="0"
@@ -216,35 +219,19 @@ export default function AddCategoryForm() {
             />
           </div>
 
-          {/* Features List */}
+          {/* Features Input */}
           <div>
             <label className="block text-gray-700">Features</label>
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-center space-x-2 mb-2">
-                <input
-                  type="text"
-                  value={feature}
-                  onChange={(e) => handleFeatureChange(index, e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter feature"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFeature(index)}
-                  className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={handleAddFeature}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-            >
-              Add Feature
-            </button>
+            <input
+              type="text"
+              value={features} // Bind the input field to features state
+              onChange={handleFeaturesChange} // Handle input changes
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter hotel features (e.g., pool, restaurant, spa, Wi-Fi, gym)"
+            />
+            <p className="text-sm text-gray-500 mt-2">
+              Enter features separated by commas, spaces will be auto-added.
+            </p>
           </div>
 
           {/* Description Input */}
@@ -252,7 +239,7 @@ export default function AddCategoryForm() {
             <label className="block text-gray-700">Description</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={handleDescriptionChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter description"
               required
@@ -264,28 +251,43 @@ export default function AddCategoryForm() {
             <label className="block text-gray-700">Upload Image</label>
             <input
               type="file"
+              accept="image/*"
               onChange={handleImageChange}
               ref={imageInputRef}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
             />
             {imagePreview && (
-              <img
-                src={imagePreview}
-                alt="Image Preview"
-                className="mt-4 w-full max-h-64 object-cover rounded-lg"
-              />
+              <div className="mt-2">
+                <img
+                  src={imagePreview}
+                  alt="Image Preview"
+                  className="w-full h-40 object-cover rounded-lg"
+                />
+              </div>
             )}
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-center">
+          {/* Buttons */}
+          <div className="flex justify-between items-center">
+            <button
+              type="button"
+              onClick={resetForm}
+              className={`text-sm text-gray-500 ${
+                isSubmitting || !hasChanges
+                  ? "cursor-not-allowed opacity-50"
+                  : "hover:text-blue-600 hover:underline"
+              }`}
+              disabled={isSubmitting || !hasChanges}
+            >
+              Reset Form
+            </button>
+
             <button
               type="submit"
-              disabled={loading || imageUploading}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 w-full"
+              disabled={isSubmitting}
+              className="px-6 py-2 text-white bg-blue-600 rounded-lg"
             >
-              {loading || imageUploading ? "Uploading..." : "Add Category"}
+              {isSubmitting ? "Adding Category..." : "Add Category"}
             </button>
           </div>
         </form>

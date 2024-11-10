@@ -112,7 +112,8 @@ export default function AdminPage() {
           {/* Route for adding a new category */}
           <Route path="/add-category" element={<AddCategoryForm />} />
           {/* Route for update category */}
-          <Route path="/update-category" element={<UpdateCategoryForm />} />
+          <Route path="/update-category/:categoryName" element={<UpdateCategoryForm />} />
+
           {/* Route for Admin Feedback */}
           <Route path="/feedback" element={<AdminFeedback />} />
           {/* Route for Admin Tickets */}

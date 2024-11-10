@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, TextField, TablePagination } from "@mui/material";
 import { FaEdit } from "react-icons/fa";
@@ -7,7 +7,20 @@ import { IoMdAdd } from "react-icons/io";
 import Swal from "sweetalert2";
 import TruncateText from "../../../components/TruncateText/TruncateText";
 
+// Custom hook for debouncing input
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(timer); // Clean up timeout on value change
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function AdminGalleryItems() {
   const navigate = useNavigate();
@@ -27,41 +40,7 @@ export default function AdminGalleryItems() {
       description: "Description for Category 2",
       image: "https://via.placeholder.com/150",
     },
-    {
-      name: "Category 3",
-      price: 30,
-      features: ["Feature 3", "Feature 4"],
-      description: "Description for Category 3",
-      image: "https://via.placeholder.com/150",
-    },
-    {
-      name: "Category 4",
-      price: 40,
-      features: ["Feature 5", "Feature 6"],
-      description: "Description for Category 4",
-      image: "https://via.placeholder.com/150",
-    },
-    {
-      name: "Category 5",
-      price: 50,
-      features: ["Feature 7", "Feature 8"],
-      description: "Description for Category 5",
-      image: "https://via.placeholder.com/150",
-    },
-    {
-      name: "Category 5",
-      price: 50,
-      features: ["Feature 7", "Feature 8"],
-      description: "Description for Category 5",
-      image: "https://via.placeholder.com/150",
-    },
-    {
-      name: "Category 5",
-      price: 50,
-      features: ["Feature 7", "Feature 8"],
-      description: "Description for Category 5",
-      image: "https://via.placeholder.com/150",
-    },
+    // Add other categories as needed
   ]);
 
   const [nameFilter, setNameFilter] = useState("");
@@ -70,12 +49,16 @@ export default function AdminGalleryItems() {
   const [page, setPage] = useState(0); // current page
   const [rowsPerPage, setRowsPerPage] = useState(5); // items per page
 
+  // Using the debounce hook for better performance
+  const debouncedNameFilter = useDebounce(nameFilter, 500);
+  const debouncedFeatureFilter = useDebounce(featureFilter, 500);
+
   // Filter categories based on the filters
   const filteredCategories = categories.filter((category) => {
     return (
-      category.name.toLowerCase().includes(nameFilter.toLowerCase()) &&
+      category.name.toLowerCase().includes(debouncedNameFilter.toLowerCase()) &&
       (priceFilter ? category.price === Number(priceFilter) : true) &&
-      (featureFilter ? category.features.some((feature) => feature.toLowerCase().includes(featureFilter.toLowerCase())) : true)
+      (debouncedFeatureFilter ? category.features.some((feature) => feature.toLowerCase().includes(debouncedFeatureFilter.toLowerCase())) : true)
     );
   });
 
@@ -114,6 +97,7 @@ export default function AdminGalleryItems() {
         size="large"
         style={{ position: "fixed", bottom: "20px", right: "20px" }}
         onClick={() => navigate("/admin/add-category")}
+        aria-label="Add category"
       >
         <IoMdAdd size={30} />
       </IconButton>
@@ -131,22 +115,23 @@ export default function AdminGalleryItems() {
             marginRight: "20px",
             "& .MuiOutlinedInput-root": {
               "& fieldset": {
-                borderColor: "#1e293b", // Change the outline color
+                borderColor: "#1e293b",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#1e293b", // Color of the outline when focused
+                borderColor: "#1e293b",
               },
             },
             "& .MuiInputBase-input": {
-              color: "#1e293b", // Change text color
+              color: "#1e293b",
             },
             "& .MuiInputLabel-root": {
-              color: "#1e293b", // Change label color
+              color: "#1e293b",
             },
-            "& .Mui-focused .MuiInputLabel-root": {
-              color: "#212121", // Color of label when focused
-            }
+            "& .MuiInputLabel-root.Mui-focused": {
+              color: "#1e293b",
+            },
           }}
+          aria-label="Filter by name"
         />
         <TextField
           label="Filter by Price"
@@ -158,22 +143,23 @@ export default function AdminGalleryItems() {
             marginRight: "20px",
             "& .MuiOutlinedInput-root": {
               "& fieldset": {
-                borderColor: "#1e293b", // Change the outline color
+                borderColor: "#1e293b",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#1e293b", // Color of the outline when focused
+                borderColor: "#1e293b",
               },
             },
             "& .MuiInputBase-input": {
-              color: "#1e293b", // Change text color
+              color: "#1e293b",
             },
             "& .MuiInputLabel-root": {
-              color: "#1e293b", // Change label color
+              color: "#1e293b",
             },
-            "& .Mui-focused .MuiInputLabel-root": {
-              color: "#212121", // Color of label when focused
-            }
+            "& .MuiInputLabel-root.Mui-focused": {
+              color: "#1e293b",
+            },
           }}
+          aria-label="Filter by price"
         />
         <TextField
           label="Filter by Feature"
@@ -184,22 +170,23 @@ export default function AdminGalleryItems() {
             marginRight: "20px",
             "& .MuiOutlinedInput-root": {
               "& fieldset": {
-                borderColor: "#1e293b", // Change the outline color
+                borderColor: "#1e293b",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#1e293b", // Color of the outline when focused
+                borderColor: "#1e293b",
               },
             },
             "& .MuiInputBase-input": {
-              color: "#1e293b", // Change text color
+              color: "#1e293b",
             },
             "& .MuiInputLabel-root": {
-              color: "#1e293b", // Change label color
+              color: "#1e293b",
             },
-            "& .Mui-focused .MuiInputLabel-root": {
-              color: "#212121", // Color of label when focused
-            }
+            "& .MuiInputLabel-root.Mui-focused": {
+              color: "#1e293b",
+            },
           }}
+          aria-label="Filter by feature"
         />
       </div>
 
@@ -215,8 +202,8 @@ export default function AdminGalleryItems() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredCategories.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((category, index) => (
-              <TableRow key={index}>
+            {filteredCategories.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((category) => (
+              <TableRow key={category.name}>
                 <TableCell align="center" style={{ color: "#212121" }}>{category.name}</TableCell>
                 <TableCell align="center" style={{ color: "#212121" }}>${category.price}</TableCell>
                 <TableCell align="center" style={{ color: "#212121" }}>{category.features.join(", ")}</TableCell>
@@ -245,6 +232,7 @@ export default function AdminGalleryItems() {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Rows per page"
       />
     </div>
   );

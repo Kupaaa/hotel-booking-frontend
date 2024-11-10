@@ -31,7 +31,7 @@ function TruncateText({ text, limit = 100 }) {
   }, []); // Empty dependency array ensures this runs only once after component mount
 
   // Determine the text to display based on whether it's expanded or not
-  const displayText = isExpanded ? text : text.slice(0, limit) + "...";
+  const displayText = isExpanded ? text : text.slice(0, limit);
 
   return (
     <div
@@ -42,7 +42,24 @@ function TruncateText({ text, limit = 100 }) {
       <p style={{ display: "inline" }}>{displayText}</p>
 
       {/* Only show the "Show More" button if the text length exceeds the limit */}
-      {text.length > limit && (
+      {text.length > limit && !isExpanded && (
+        <>
+          {/* Display the ellipsis with the button on the same line */}
+          <span>...</span>
+          <Button
+            onClick={toggleExpanded} // Toggle the expanded state on button click
+            size="small"
+            aria-expanded={isExpanded} // Accessible attribute for expanded state
+            aria-label={isExpanded ? "Show less text" : "Show more text"} // For accessibility, change label based on state
+            style={{ marginLeft: "5px" }}
+          >
+            Show More
+          </Button>
+        </>
+      )}
+
+      {/* Display "Show Less" if text is expanded */}
+      {isExpanded && text.length > limit && (
         <Button
           onClick={toggleExpanded} // Toggle the expanded state on button click
           size="small"
@@ -50,12 +67,11 @@ function TruncateText({ text, limit = 100 }) {
           aria-label={isExpanded ? "Show less text" : "Show more text"} // For accessibility, change label based on state
           style={{ marginLeft: "5px" }}
         >
-          {isExpanded ? "Show Less" : "Show More"} {/* Button text */}
+          Show Less
         </Button>
       )}
     </div>
   );
 }
 
-// Export the component for use in other parts of the app
 export default TruncateText;

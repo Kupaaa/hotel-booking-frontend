@@ -1,44 +1,50 @@
 import { useState, useEffect } from "react";
-import uploadMedia from "../../../utils/meadiaUpload";
+import uploadMedia from "../../../utils/meadiaUpload"; // Importing the media upload utility
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
 import {
-  confirmUpdate,
+  confirmUpdate, // Importing helper functions for dialogs
   showErrorMessage,
   showSuccessMessage,
 } from "../../../utils/confirmDialog";
 
 export default function UpdateCategoryForm() {
+  // useLocation hook to get category details from state passed via react-router
   const location = useLocation();
-  const categoryState = location.state || {}; // Fallback to an empty object if state is undefined
+  const categoryState = location.state || {}; // Fallback to an empty object if no state is passed
 
+  // State to store the original image for restoring later
+  const [originalImage, setOriginalImage] = useState(categoryState.image);
+
+  // Initial form state with default category details from `categoryState`
   const initialState = {
-    name: categoryState.name || "", // Set the initial state for the name from categoryState
-    price: categoryState.price || 0, // Set the initial state for the price
-    features: categoryState.features || [], // Initialize the features array
-    description: categoryState.description || "", // Initialize the description
-    imagePreview: categoryState.image || null, // Image preview state, using the image from categoryState
+    name: categoryState.name || "",
+    price: categoryState.price || 0,
+    features: categoryState.features || [],
+    description: categoryState.description || "",
+    imagePreview: categoryState.image || null, // Initial image preview from categoryState
     image: null, // Image file to be uploaded
   };
 
-  const [formState, setFormState] = useState(initialState); // Form state initialized with initialState
-  const [isSubmitting, setIsSubmitting] = useState(false); // State to manage the submission process
-  const [errors, setErrors] = useState({}); // Object to store validation errors
-  const [isImageLoading, setIsImageLoading] = useState(false); // State to handle image loading
-  const [hasChanges, setHasChanges] = useState(false); // Track if form has changes
+  // useState hook to store form state, submission status, errors, and changes
+  const [formState, setFormState] = useState(initialState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
-  const navigate = useNavigate(); // React Router hook for navigation
-  const { isLoading: authLoading } = useAuth(); // Custom hook to manage authentication state
+  const navigate = useNavigate();
+  const { isLoading: authLoading } = useAuth();
 
-  // Check if form state differs from the initial state
+  // Effect to check if the form has been modified
   useEffect(() => {
     const formChanged =
       JSON.stringify(formState) !== JSON.stringify(initialState);
     setHasChanges(formChanged);
   }, [formState, initialState]);
 
-  // Cleanup function to revoke image preview URL when component unmounts or image changes
+  // Clean up image preview URL when component unmounts or image preview changes
   useEffect(() => {
     return () => {
       if (
@@ -50,47 +56,29 @@ export default function UpdateCategoryForm() {
     };
   }, [formState.imagePreview]);
 
-  // Add a new feature to the form
-  const handleAddFeature = () => {
-    setFormState((prev) => ({
-      ...prev,
-      features: [...prev.features, ""], // Add an empty string to features array
-    }));
-  };
-
-  // Remove a feature from the form
-  const handleRemoveFeature = (index) => {
-    setFormState((prev) => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index), // Remove feature by index
-    }));
-  };
-
-  // Handle the change of a feature input
-  const handleFeatureChange = (index, value) => {
-    const updatedFeatures = [...formState.features];
-    updatedFeatures[index] = value.trim(); // Update the feature value at specific index
-    setFormState((prev) => ({ ...prev, features: updatedFeatures }));
-  };
-
-  // Handle the change of the image input (for preview and file upload)
+  // Handle image change: preview and validate the file
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const selectedImage = e.target.files[0];
+      // Validate image file type and size
       if (
         !selectedImage.type.startsWith("image/") ||
         selectedImage.size > 5 * 1024 * 1024
       ) {
-        // Remove toast error
-        return;
+        return; // Return if invalid image
       }
+
+      // Update form state with the selected image and preview
       setFormState((prev) => ({ ...prev, image: selectedImage }));
-      const previewUrl = URL.createObjectURL(selectedImage); // Create a URL for image preview
+      const previewUrl = URL.createObjectURL(selectedImage);
       setFormState((prev) => ({ ...prev, imagePreview: previewUrl }));
+    } else {
+      // Restore the original image preview if image is cleared
+      setFormState((prev) => ({ ...prev, imagePreview: originalImage }));
     }
   };
 
-  // Form validation logic
+  // Validate the form inputs before submission
   const validateForm = () => {
     const newErrors = {};
     if (!formState.price || formState.price < 0)
@@ -103,32 +91,31 @@ export default function UpdateCategoryForm() {
     return Object.keys(newErrors).length === 0; // Return true if no errors
   };
 
-  const resetForm = () => setFormState(initialState); // Reset the form to initial state
+  // Reset the form to its initial state
+  const resetForm = () => setFormState(initialState);
 
-  // Inside handleSubmit after successful submission
+  // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
 
-    // Show the confirmation dialog before proceeding with the update
-    const isConfirmed = await confirmUpdate(formState.name); // Use the category name in the confirmation message
+    const isConfirmed = await confirmUpdate(formState.name);
+    if (!isConfirmed.isConfirmed) return; // Exit if the user doesn't confirm the update
 
-    // If the user cancels the confirmation, exit the function without updating
-    if (!isConfirmed.isConfirmed) {
-      return; // Do not proceed with the update
-    }
-
-    if (!validateForm()) return; // Validation check if user confirmed
+    if (!validateForm()) return; // Exit if form is invalid
 
     setIsSubmitting(true); // Set submitting state to true
     try {
-      let imageUrl = formState.imagePreview;
+      let imageUrl = formState.imagePreview; // Set default image URL
+
+      // If a new image is selected, upload it
       if (formState.image) {
-        setIsImageLoading(true); // Show loading state while image is being uploaded
-        imageUrl = await uploadMedia(formState.image); // Upload image and get the URL
-        setIsImageLoading(false); // Hide loading state
+        setIsImageLoading(true); // Set image loading state
+        imageUrl = await uploadMedia(formState.image); // Upload image
+        setIsImageLoading(false); // Reset image loading state
         if (!imageUrl) throw new Error("Image upload failed.");
       }
 
+      // Prepare the updated category data
       const updatedCategory = {
         name: formState.name,
         price: formState.price,
@@ -137,44 +124,46 @@ export default function UpdateCategoryForm() {
         image: imageUrl,
       };
 
+      // API call to update the category
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories/${
         formState.name
-      }`; // API endpoint
-      const token = localStorage.getItem("token"); // Get authentication token from localStorage
+      }`;
+      const token = localStorage.getItem("token");
 
+      // Redirect to login if no token is available
       if (!token) {
         setIsSubmitting(false);
-        navigate("/login"); // Navigate to login page
+        navigate("/login");
         return;
       }
 
+      // Send PUT request to update category
       const response = await axios.put(url, updatedCategory, {
-        headers: { Authorization: `Bearer ${token}` }, // Include token in headers
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      showSuccessMessage("Success", "Category updated successfully!"); // Show success message
-      resetForm(); // Reset form after successful submission
-      navigate("/admin/categories"); // Navigate to categories page
+      // Show success message and navigate
+      showSuccessMessage("Success", "Category updated successfully!");
+      resetForm();
+      navigate("/admin/categories");
     } catch (error) {
       console.error("Error submitting form:", error);
-      showErrorMessage("Error", "Failed to update category. Please try again."); // Show error message
+      showErrorMessage("Error", "Failed to update category. Please try again.");
     } finally {
-      setIsSubmitting(false); // Reset submitting state
+      setIsSubmitting(false); // Reset submission state
     }
   };
 
-  if (authLoading) return <div>Loading...</div>; // Show loading state while authentication is loading
+  if (authLoading) return <div>Loading...</div>; // Show loading state if auth is loading
 
   return (
-    // Main container with flex for centering
     <div className="flex justify-center items-center w-full min-h-screen p-4">
-      {/* Form container with max width and shadow */}
       <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6">
         <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
           Update Category
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Category Name (read-only) */}
+          {/* Category Name (Read-Only) */}
           <div>
             <label className="block text-gray-700">Category Name</label>
             <input
@@ -185,7 +174,7 @@ export default function UpdateCategoryForm() {
             />
           </div>
 
-          {/* Price Input with validation */}
+          {/* Price Input */}
           <div>
             <label className="block text-gray-700">Price</label>
             <input
@@ -208,39 +197,30 @@ export default function UpdateCategoryForm() {
             )}
           </div>
 
-          {/* Features Section with Add/Remove functionality */}
+          {/* Features Input */}
           <div>
             <label className="block text-gray-700">Features</label>
-            {formState.features.map((feature, index) => (
-              <div key={index} className="flex items-center space-x-2 mb-2">
-                <input
-                  type="text"
-                  value={feature}
-                  onChange={(e) => handleFeatureChange(index, e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter feature"
-                  required
-                />
-                {/* Remove feature button */}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFeature(index)}
-                  className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
+            <textarea
+              value={formState.features.join(", ")}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  features: e.target.value
+                    .split(",")
+                    .map((feature) => feature.trim()),
+                }))
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter features (e.g., pool, restaurant, Wi-Fi, gym)"
+              rows="4"
+            ></textarea>
+            <p className="text-gray-500 text-sm mt-1">
+              Separate each feature with a comma (e.g., pool, restaurant,
+              Wi-Fi).
+            </p>
             {errors.features && (
               <p className="text-red-600 text-sm">{errors.features}</p>
             )}
-            <button
-              type="button"
-              onClick={handleAddFeature}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-            >
-              Add Feature
-            </button>
           </div>
 
           {/* Description Input */}
@@ -264,7 +244,7 @@ export default function UpdateCategoryForm() {
             )}
           </div>
 
-          {/* Image Upload with preview */}
+          {/* Image Input */}
           <div>
             <label className="block text-gray-700">Image</label>
             <input
@@ -278,18 +258,34 @@ export default function UpdateCategoryForm() {
                 <img
                   src={formState.imagePreview}
                   alt="Preview"
-                  className="max-w-full max-h-[200px] rounded-lg"
+                  className="w-24 h-24 object-cover rounded-md"
                 />
               </div>
             )}
           </div>
 
           {/* Submit Button */}
-          <div>
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={resetForm}
+              className={`text-sm text-gray-500 ${
+                isSubmitting || !hasChanges
+                  ? "cursor-not-allowed opacity-50"
+                  : "hover:text-blue-600 hover:underline"
+              }`}
+              disabled={isSubmitting || !hasChanges} // Disable button if submitting or no changes
+            >
+              Reset Form
+            </button>
             <button
               type="submit"
+              className={`px-6 py-2 text-white bg-blue-600 rounded-lg ${
+                isSubmitting || !hasChanges
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
               disabled={isSubmitting || !hasChanges}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
             >
               {isSubmitting ? "Updating..." : "Update Category"}
             </button>

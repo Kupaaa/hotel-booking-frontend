@@ -1,62 +1,98 @@
-import axios from "axios";
-import React, { useEffect, useState } from "react";
-import { IoMdAdd } from "react-icons/io";
-import { MdDelete } from "react-icons/md";
-import { Link, useNavigate } from "react-router-dom";
-import useAuth from "../../../hooks/useAuth";
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  TablePagination,
+  TextField,
+  FormControlLabel,
+  Switch,
+  Fab,
+} from "@mui/material";
 import { FaEdit } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
+import { IoMdAdd } from "react-icons/io";
 import {
   confirmDelete,
   showErrorMessage,
   showSuccessMessage,
 } from "../../../utils/confirmDialog";
+import useAuth from "../../../hooks/useAuth";
+import axios from "axios";
+import TruncateText from "../../../components/TruncateText/TruncateText";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
-export default function AdminCategories() {
-  const [categories, setCategories] = useState([]); // State to hold fetched categories
-  const [categoryIsLoaded, setCategoryIsLoaded] = useState(false); // State to track loading status
-  const [error, setError] = useState(null); // State to track errors
+export default function AdminCategoryTable() {
+  const [categories, setCategories] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [categoryIsLoaded, setCategoryIsLoaded] = useState(false);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    name: "",
+    price: "",
+    feature: "",
+  });
   const navigate = useNavigate();
+  const { isLoading, isAuthenticated } = useAuth();
 
-  const { isLoading, isAuthenticated } = useAuth(); // Use the custom hook to handle authentication
+  // Styles for the filter text fields
+  const filterTextFieldStyle = {
+    marginRight: "20px", // Margin for spacing
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "#1e293b", // Border color
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#1e293b", // Focused border color
+      },
+    },
+    "& .MuiInputBase-input": {
+      color: "#1e293b", // Input text color
+    },
+    "& .MuiInputLabel-root": {
+      color: "#1e293b", // Label text color
+    },
+    "& .MuiInputLabel-root.Mui-focused": {
+      color: "#1e293b", // Focused label text color
+    },
+  };
 
+  // Fetch categories data on component mount
   useEffect(() => {
+    if (isLoading || !isAuthenticated) return; // Don't fetch if not authenticated or loading
+
+    // Show loading spinner
+    Swal.fire({
+      title: "Loading...",
+      text: "Fetching categories...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    // Async function to fetch categories from the backend
     const fetchCategories = async () => {
-      if (isLoading) return; // Wait until authentication is done
-
-      if (!isAuthenticated) {
-        // If not authenticated, navigate to login
-        return;
-      }
-
       try {
-        // Show SweetAlert2 loading spinner with minimal delay (1ms)
-        // setTimeout(() => {
-        //   Swal.fire({
-        //     title: 'Loading categories...',
-        //     text: 'Please wait while we fetch the categories.',
-        //     allowOutsideClick: false, // Prevent closing the modal by clicking outside
-        //     didOpen: () => {
-        //       Swal.showLoading(); // Show the loading spinner
-        //     },
-        //   });
-        // }, 0.1);
+        const token = localStorage.getItem("token"); // Get authentication token
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
+          {
+            headers: { Authorization: `Bearer ${token}` }, // Include token in request header
+          }
+        );
 
-        const token = localStorage.getItem("token");
-        const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`;
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`, // Include token in the request header
-          },
-        });
+        setCategories(response.data.categories); // Set categories state
+        setCategoryIsLoaded(true); // Set loading flag to false
+        Swal.close(); // Close loading modal
 
-        setCategories(response.data.categories); // Store fetched data in state
-        setCategoryIsLoaded(true); // Set loading to true after data is loaded
-
-        Swal.close(); // Close the loading spinner once data is fetched
-
+        // Show message if no categories are found
         if (response.data.categories.length === 0) {
-          // Show alert if no categories are found
           Swal.fire(
             "No Categories",
             "There are no categories available.",
@@ -64,28 +100,23 @@ export default function AdminCategories() {
           );
         }
       } catch (error) {
-        setError("Failed to fetch categories. Please try again.");
-        setCategoryIsLoaded(true); // Set loading to true to prevent infinite loading if an error occurs
-        console.error("Error fetching categories:", error); // Log error to console
-
-        // Show error message with SweetAlert2
-        Swal.fire(
+        setError("Failed to fetch categories. Please try again."); // Handle errors
+        setCategoryIsLoaded(true);
+        Swal.close();
+        showErrorMessage(
           "Error!",
           "Failed to fetch categories. Please try again.",
           "error"
-        );
+        ); // Show error message
       }
     };
 
-    fetchCategories(); // Call the function to fetch categories
-  }, [isAuthenticated, isLoading]); // Add dependencies for re-running the effect
+    fetchCategories();
+  }, [isAuthenticated, isLoading]);
 
-  // Function to delete a category by name
   const deleteItem = async (name) => {
     try {
-      // Call the confirm dialog and wait for the user's response
       const result = await confirmDelete(name);
-
       if (result.isConfirmed) {
         const token = localStorage.getItem("token");
         const url = `${
@@ -93,107 +124,238 @@ export default function AdminCategories() {
         }/api/categories/${name}`;
         await axios.delete(url, {
           headers: {
-            Authorization: `Bearer ${token}`, // Include token in the request header
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        // Update the categories state after deletion
-        setCategories(
-          (prevCategories) =>
-            prevCategories.filter((category) => category.name !== name) // Remove deleted category from state
+        setCategories((prevCategories) =>
+          prevCategories.filter((category) => category.name !== name)
         );
-
-        // Show success message
-        showSuccessMessage("Deleted!", "The category has been deleted."); // Use the showSuccessMessage function
+        showSuccessMessage("Deleted!", "The category has been deleted.");
       }
     } catch (error) {
-      console.error("Failed to delete item:", error); // Log the full error for debugging
-      // Show error message
-      showErrorMessage("Error!", "Failed to delete item. Please try again."); // Use the showErrorMessage function
+      console.error("Failed to delete item:", error);
+      showErrorMessage("Error!", "Failed to delete item. Please try again.");
     }
   };
 
-  // Conditional rendering for loaded categories or error states
-  if (isLoading) {
-    return <div>Loading...</div>; // You could also use a SweetAlert2 loading message here
-  }
+  const handleChangePage = (event, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
+  const toggleCategoryStatus = async (category) => {
+    const updatedCategory = { ...category, enabled: !category.enabled };
+    const token = localStorage.getItem("token");
+    const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories/${
+      category.name
+    }`;
+
+    try {
+      await axios.put(url, updatedCategory, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setCategories((prevCategories) =>
+        prevCategories.map((item) =>
+          item.name === category.name ? updatedCategory : item
+        )
+      );
+      showSuccessMessage(
+        "Status Updated",
+        "Category status updated successfully."
+      );
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      showErrorMessage("Error!", "Failed to update status.");
+    }
+  };
+
+  // Filter categories based on filter state
+  const filteredCategories = categories.filter((category) => {
+    const nameMatch = category.name
+      .toLowerCase()
+      .includes(filters.name.toLowerCase());
+    const priceMatch = filters.price
+      ? category.price.toString().includes(filters.price)
+      : true;
+    const featureMatch = category.features.some((feature) =>
+      feature.toLowerCase().includes(filters.feature.toLowerCase())
+    );
+    return nameMatch && priceMatch && featureMatch;
+  });
+
+  if (isLoading) return <div>Loading...</div>;
   if (categoryIsLoaded && !error) {
     return (
       <div className="container mx-auto p-5">
-        <button
-          className="bg-red-600 w-[60px] h-[60px] rounded-full text-5xl flex justify-center items-center fixed bottom-5 right-5"
+        <Fab
+          color="primary"
+          size="large"
+          style={{ position: "fixed", bottom: "20px", right: "20px" }}
           onClick={() => navigate("/admin/add-category")}
+          aria-label="Add category"
         >
-          <IoMdAdd />
-        </button>
+          <IoMdAdd size={30} />
+        </Fab>
+
         <h1 className="text-3xl font-bold mb-6 text-center">Category Table</h1>
-        <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
-          <thead>
-            <tr>
-              <th className="py-3 px-6 bg-blue-600 text-white text-left text-sm font-semibold">
-                Name
-              </th>
-              <th className="py-3 px-6 bg-blue-600 text-white text-left text-sm font-semibold">
-                Price
-              </th>
-              <th className="py-3 px-6 bg-blue-600 text-white text-left text-sm font-semibold">
-                Features
-              </th>
-              <th className="py-3 px-6 bg-blue-600 text-white text-left text-sm font-semibold">
-                Description
-              </th>
-              <th className="py-3 px-6 bg-blue-600 text-white text-left text-sm font-semibold">
-                Image
-              </th>
-              <th className="py-3 px-6 bg-blue-600 text-white text-left text-sm font-semibold">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map((category, index) => (
-              <tr key={index} className="border-b hover:bg-gray-100">
-                <td className="py-3 px-6">{category.name}</td>
-                <td className="py-3 px-6">${category.price}</td>
-                <td className="py-3 px-6">{category.features.join(", ")}</td>
-                <td className="py-3 px-6">{category.description}</td>
-                <td className="py-3 px-6">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-16 h-16 rounded"
-                  />
-                </td>
-                <td className="py-3 px-6 flex space-x-2">
-                  {/* Edit button */}
-                  <Link
-                    to={`/admin/update-category`} // Add the category ID to the URL
-                    className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
-                    state={category}
-                  >
-                    <FaEdit />
-                  </Link>
-                  {/* Delete button */}
-                  <button
-                    onClick={() => deleteItem(category.name)} // Handle delete action
-                    className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-                    aria-label={`Delete category: ${category.name}`}
-                  >
-                    <MdDelete />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+        {/* Filter inputs */}
+        <div style={{ marginBottom: "20px" }}>
+          <TextField
+            label="Filter by Name"
+            variant="outlined"
+            value={filters.name}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, name: e.target.value }))
+            }
+            sx={filterTextFieldStyle}
+          />
+          <TextField
+            label="Filter by Price"
+            variant="outlined"
+            value={filters.price}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, price: e.target.value }))
+            }
+            type="number"
+            sx={filterTextFieldStyle}
+          />
+          <TextField
+            label="Filter by Feature"
+            variant="outlined"
+            value={filters.feature}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, feature: e.target.value }))
+            }
+            sx={filterTextFieldStyle}
+          />
+        </div>
+
+        <TableContainer component={Paper}>
+          <Table aria-label="category table">
+            <TableHead>
+              <TableRow style={{ backgroundColor: "#1e293b" }}>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>#</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Name</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Price</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Features</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Description</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Image</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Status</strong>
+                </TableCell>
+                <TableCell align="center" style={{ color: "#e0f7fa" }}>
+                  <strong>Actions</strong>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredCategories
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((category, index) => (
+                  <TableRow key={category.name}>
+                    <TableCell align="center" style={{ fontWeight: "bold" }}>
+                      {page * rowsPerPage + index + 1}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      style={{ color: "#212121", maxWidth: 200 }}
+                    >
+                      <TruncateText text={category.name} limit={20} />
+                    </TableCell>
+                    <TableCell align="center">${category.price}</TableCell>
+                    <TableCell
+                      align="center"
+                      style={{ color: "#212121", maxWidth: 200 }}
+                    >
+                      <TruncateText
+                        text={category.features.join(", ")}
+                        limit={30}
+                      />
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      style={{ color: "#212121", maxWidth: 200 }}
+                    >
+                      <TruncateText text={category.description} limit={50} />
+                    </TableCell>
+                    <TableCell align="center">
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        style={{ width: 50, height: 50, objectFit: "cover" }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={category.enabled}
+                            onChange={() => toggleCategoryStatus(category)}
+                            color="primary"
+                          />
+                        }
+                        label={category.enabled ? "Enabled" : "Disabled"}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        color="primary"
+                        onClick={() =>
+                          navigate(`/admin/update-category/${category.name}`, {
+                            state: category,
+                          })
+                        }
+                      >
+                        <FaEdit style={{ color: "#1e293b" }} />
+                      </IconButton>
+                      <IconButton
+                        color="secondary"
+                        onClick={() => deleteItem(category.name)}
+                      >
+                        <MdDelete style={{ color: "#f44336" }} />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {/* Pagination */}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredCategories.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </div>
     );
   }
 
-  if (error) {
-    return <div>{error}</div>; // Show error message if there's an error fetching categories
-  }
-
-  return <div>No categories available.</div>; // Handle case where no categories are returned
+  return (
+    <div>
+      <h1>Loading or Error occurred while fetching categories!</h1>
+    </div>
+  );
 }
