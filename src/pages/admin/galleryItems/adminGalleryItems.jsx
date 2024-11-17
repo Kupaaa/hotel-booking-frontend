@@ -16,7 +16,7 @@ import {
   showErrorMessage,
   showSuccessMessage,
 } from "../../../utils/confirmDialog";
-import TruncateText from "../../../components/TruncateText/TruncateText"; // Assuming the path is correct
+import TruncateText from "../../../components/TruncateText/TruncateText"; 
 
 export default function AdminGalleryTable() {
   const [galleryItems, setGalleryItems] = useState([]);
@@ -62,9 +62,14 @@ export default function AdminGalleryTable() {
         accessorKey: "enabled",
         header: "Status",
         size: 100,
-        Cell: ({ cell }) => (
+        Cell: ({ cell, row }) => (
           <FormControlLabel
-            control={<Switch checked={cell.getValue()} />}
+            control={
+              <Switch
+                checked={cell.getValue()}
+                onChange={() => toggleEnabledStatus(row.original)}
+              />
+            }
             label={cell.getValue() ? "Enabled" : "Disabled"}
           />
         ),
@@ -138,6 +143,37 @@ export default function AdminGalleryTable() {
 
     fetchGalleryItems();
   }, [isAuthenticated, isLoading]);
+
+  const toggleEnabledStatus = async (item) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/gallery/${item.name}/toggle`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // After successful response, update the item in the state
+      setGalleryItems((prevItems) =>
+        prevItems.map((galleryItem) =>
+          galleryItem._id === item._id
+            ? { ...galleryItem, enabled: response.data.galleryItem.enabled }
+            : galleryItem
+        )
+      );
+
+      showSuccessMessage(
+        "Status Updated",
+        "Gallery item status has been updated."
+      );
+    } catch (error) {
+      showErrorMessage("Error!", "Failed to update gallery item status.");
+    }
+  };
 
   const deleteItem = async (name) => {
     try {
