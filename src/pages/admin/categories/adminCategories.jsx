@@ -3,7 +3,7 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
 } from 'material-react-table';
-import { Fab, Switch, FormControlLabel, IconButton, Tooltip } from '@mui/material';
+import { Fab, Switch, FormControlLabel, IconButton } from '@mui/material';
 import { FaEdit } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
 import { IoMdAdd } from 'react-icons/io';
@@ -12,16 +12,43 @@ import axios from 'axios';
 import useAuth from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { confirmDelete, showErrorMessage, showSuccessMessage } from '../../../utils/confirmDialog';
-import TruncateText from '../../../components/TruncateText/TruncateText'; // Assuming the path is correct
-
-// import './adminCategory.css';
+import TruncateText from '../../../components/TruncateText/TruncateText';
 
 export default function AdminCategoryTable() {
   const [categories, setCategories] = useState([]);
   const [categoryIsLoaded, setCategoryIsLoaded] = useState(false);
-  const [error, setError] = useState(null);
   const { isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Function to toggle the enabled status of a category
+  const toggleEnabledStatus = async (category) => {
+    try {
+      const token = localStorage.getItem("token");
+      const updatedCategory = { ...category, enabled: !category.enabled };
+
+      // Update the state optimistically
+      setCategories(prevCategories =>
+        prevCategories.map(item =>
+          item.name === category.name ? updatedCategory : item
+        )
+      );
+
+      // Send the updated status to the backend
+      await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/categories/${category.name}`,
+        { enabled: updatedCategory.enabled },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      showSuccessMessage("Status Updated!", "The category status has been updated.");
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      showErrorMessage("Error!", "Failed to update the category status. Please try again.");
+    }
+  };
 
   const columns = useMemo(() => [
     {
@@ -29,8 +56,8 @@ export default function AdminCategoryTable() {
       header: '#',
       size: 50,
       Cell: ({ row }) => row.index + 1, // Display the index (row number)
-      enableSorting: false, // Enable sorting for the "Name" column
-      enableColumnFilter: false, // Enable filtering for the "Name" column
+      enableSorting: false, // Disable sorting for the "Name" column
+      enableColumnFilter: false, // Disable filtering for the "Name" column
     },
     {
       accessorKey: 'name',
@@ -69,13 +96,18 @@ export default function AdminCategoryTable() {
       ),
     },
     {
-      accessorKey: 'enabled',
-      header: 'Status',
+      accessorKey: "enabled",
+      header: "Status",
       size: 100,
-      Cell: ({ cell }) => (
+      Cell: ({ cell, row }) => (
         <FormControlLabel
-          control={<Switch checked={cell.getValue()} />}
-          label={cell.getValue() ? 'Enabled' : 'Disabled'}
+          control={
+            <Switch
+              checked={cell.getValue()}
+              onChange={() => toggleEnabledStatus(row.original)} // Calling toggle function
+            />
+          }
+          label={cell.getValue() ? "Enabled" : "Disabled"}
         />
       ),
     },

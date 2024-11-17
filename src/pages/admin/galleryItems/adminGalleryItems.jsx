@@ -16,7 +16,7 @@ import {
   showErrorMessage,
   showSuccessMessage,
 } from "../../../utils/confirmDialog";
-import TruncateText from "../../../components/TruncateText/TruncateText"; 
+import TruncateText from "../../../components/TruncateText/TruncateText";
 
 export default function AdminGalleryTable() {
   const [galleryItems, setGalleryItems] = useState([]);

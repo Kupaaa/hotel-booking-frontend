@@ -103,7 +103,7 @@ export default function AddCategoryForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true); // Start submitting
-
+  
     // Form validation before submitting
     if (!name || !price || !description || !image || features.length === 0) {
       showErrorMessage(
@@ -113,12 +113,12 @@ export default function AddCategoryForm() {
       setIsSubmitting(false);
       return;
     }
-
+  
     setLoading(true); // Set loading state while submitting the form
     try {
       setImageUploading(true); // Set image uploading state
       const imageUrl = await uploadMedia(image); // Upload the image
-
+  
       if (!imageUrl) {
         setLoading(false);
         setImageUploading(false);
@@ -128,7 +128,7 @@ export default function AddCategoryForm() {
         );
         return;
       }
-
+  
       // Prepare the data to send to the backend
       const newCategory = {
         name,
@@ -139,7 +139,7 @@ export default function AddCategoryForm() {
       };
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/categories`; // Backend URL
       const token = localStorage.getItem("token"); // Get the authentication token
-
+  
       if (!token) {
         setLoading(false);
         setImageUploading(false);
@@ -151,7 +151,7 @@ export default function AddCategoryForm() {
         setIsSubmitting(false);
         return;
       }
-
+  
       // Send the data to the server
       const response = await axios.post(url, newCategory, {
         headers: { Authorization: `Bearer ${token}` }, // Send token in the header
@@ -159,6 +159,7 @@ export default function AddCategoryForm() {
 
       showSuccessMessage("Category Added", response.data.message); // Success message
       resetForm(); // Reset the form after submission
+      
     } catch (error) {
       console.error("Error submitting form:", error);
       if (
@@ -179,6 +180,7 @@ export default function AddCategoryForm() {
       setIsSubmitting(false); // End submission state
     }
   };
+  
 
   // If authentication is still loading, show a loading message
   if (authLoading) {
