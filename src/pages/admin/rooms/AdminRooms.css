@@ -1,0 +1,121 @@
+.admin-rooms {
+    position: relative;
+    padding: 20px;
+}
+
+.settings-icon {
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.settings-panel {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    width: 250px;
+    padding: 15px;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.settings-panel.open {
+    display: block;
+    opacity: 1;
+}
+
+.dropdown-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.header-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.adjustments-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.badge-colors {
+    display: flex;
+    gap: 10px;
+}
+
+.badge.filter {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.badge.filter:hover {
+    opacity: 0.8;
+}
+
+.badge-purple {
+    background-color: purple;
+}
+
+.badge-blue {
+    background-color: blue;
+}
+
+.badge-green {
+    background-color: green;
+}
+
+.badge-red {
+    background-color: red;
+}
+
+.badge-orange {
+    background-color: orange;
+}
+
+.badge-white {
+    background-color: white;
+    border: 1px solid #ccc;
+}
+
+.badge-black {
+    background-color: black;
+}
+
+.toggle-switch {
+    width: 40px;
+    height: 20px;
+}
+
+.image-options {
+    display: flex;
+    gap: 10px;
+}
+
+.img-holder img {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 250px;
+    background-color: #f8f9fa;
+    transition: background-image 0.3s ease;
+}

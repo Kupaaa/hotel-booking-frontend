@@ -1,0 +1,9 @@
+/* Custom styles for the MaterialReactTable header */
+.material-react-table .MuiTableHead-root th {
+  font-size: 1.125rem; /* Same as text-lg in Tailwind */
+  font-weight: 600; /* Same as font-semibold in Tailwind */
+  color: #3b82f6; /* Tailwind blue-500 */
+  background-color: #f3f4f6; /* Tailwind bg-gray-100 */
+  padding: 1rem; /* Optional: adds some padding for spacing */
+  text-align: left; /* Optional: aligns text to the left */
+}

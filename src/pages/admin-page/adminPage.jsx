@@ -13,112 +13,119 @@ import AdminCategories from "../admin/categories/adminCategories";
 import AddCategoryForm from "../admin/addCategoryForm/addCategoryForm";
 import useAuth from "../../hooks/useAuth";
 import UpdateCategoryForm from "../admin/updateCategoryForm/updateCategoryForm";
-
+import UserTag1 from "../../components/userData/userTag1";
+import "./AdminPage.css";
+import AddGalleryItemForm from "../admin/addGalleryItemsForm/addGalleryItems";
+import UpdateGalleryItemForm from "../admin/updateGalleryItemForm/updateGalleryItemForm";
 
 export default function AdminPage() {
-  // Use the custom authentication hook
+  // Destructure isLoading and isAuthenticated from custom authentication hook
   const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
-    // Optionally display a loading spinner or message while checking the token
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-full">
+        <span>Loading...</span>
+      </div>
+    );
   }
 
-  // If not authenticated, prevent rendering of the admin page
   if (!isAuthenticated) {
-    return null; // Alternatively, you could render a "Not Authorized" message
+    return (
+      <div className="flex justify-center items-center h-full text-xl text-red-600">
+        You are not authorized to view this page.
+      </div>
+    );
   }
 
   return (
-    <div className="h-[100vh] max-h-[100vh] overflow-hidden flex">
-      {/* Sidebar for navigation */}
-      <div className="w-[20%] h-[100vh] bg-slate-800 flex flex-col">
-        {/* Link for Bookings */}
-        <div>
+    <div className="h-screen flex">
+      {/* Sidebar for Navigation */}
+      <div className="w-1/5 bg-gray-800 text-white flex flex-col p-4">
+        {/* Sidebar Title */}
+        <div className="mb-4 text-2xl font-bold text-center">Admin Panel</div>
+
+        {/* User Information */}
+        <div className="mb-6">
+          <UserTag1 />{" "}
+          {/* Displays the logged-in user's name and profile image */}
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="space-y-4">
+          {" "}
+          {/* Adds spacing between links */}
           <Link
             to="/admin/bookings"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <FaBookmark className="mr-2" /> Bookings
+            <FaBookmark className="mr-2 text-[40px]" /> {/* Icon size */}
+            <span>Bookings</span>
           </Link>
-        </div>
-        {/* Link for Rooms */}
-        <div>
           <Link
             to="/admin/rooms"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <MdRoomPreferences className="mr-2" /> Rooms
+            <MdRoomPreferences className="mr-2 text-[40px]" />
+            <span>Rooms</span>
           </Link>
-        </div>
-        {/* Link for Users */}
-        <div>
           <Link
             to="/admin/users"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <FaUserCog className="mr-2" /> Users
+            <FaUserCog className="mr-2 text-xl" />
+            <span>Users</span>
           </Link>
-        </div>
-        {/* Link for Categories */}
-        <div>
           <Link
             to="/admin/categories"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <MdCategory className="mr-2" /> Categories
+            <MdCategory className="mr-2 text-[40px]" />
+            <span>Categories</span>
           </Link>
-        </div>
-        {/* Link for Feedback */}
-        <div>
           <Link
             to="/admin/feedback"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <MdFeedback className="mr-2" /> Feedback
+            <MdFeedback className="mr-2 text-[40px]" />
+            <span>Feedback</span>
           </Link>
-        </div>
-        {/* Link for Tickets */}
-        <div>
           <Link
             to="/admin/tickets"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <FaTicketSimple className="mr-2" /> Tickets
+            <FaTicketSimple className="mr-2 text-[40px]" />
+            <span>Tickets</span>
           </Link>
-        </div>
-        {/* Link for Gallery Items */}
-        <div>
           <Link
             to="/admin/gallery-items"
-            className="text-white text-[30px] hover:font-bold flex justify-center items-center"
+            className="nav-link flex items-center text-lg"
           >
-            <RiGalleryFill className="mr-2" /> Gallery Items
+            <RiGalleryFill className="mr-2 text-[40px]" />
+            <span>Gallery Items</span>
           </Link>
-        </div>
+        </nav>
       </div>
 
-      {/* Main content area for displaying selected admin pages */}
-      <div className="w-[80%] max-h-[100vh] overflow-y-scroll bg-slate-500 flex">
+      {/* Main Content Area */}
+      <div className="w-4/5 bg-gray-100 p-6 overflow-y-auto">
         <Routes>
-          {/* Route for Admin Bookings */}
           <Route path="/bookings" element={<AdminBookings />} />
-          {/* Route for Admin Rooms */}
           <Route path="/rooms" element={<AdminRooms />} />
-          {/* Route for Admin Users */}
           <Route path="/users" element={<AdminUsers />} />
-          {/* Route for Admin Categories */}
           <Route path="/categories" element={<AdminCategories />} />
-          {/* Route for adding a new category */}
           <Route path="/add-category" element={<AddCategoryForm />} />
-          {/* Route for update category */}
-          <Route path="/update-category/:categoryName" element={<UpdateCategoryForm />} />
-
-          {/* Route for Admin Feedback */}
+          <Route
+            path="/update-category/:categoryName"
+            element={<UpdateCategoryForm />}
+          />
+          <Route path="/add-gallery-Item" element={<AddGalleryItemForm />} />
+          <Route
+            path="/update-gallery-item/:name"
+            element={<UpdateGalleryItemForm />}
+          />
           <Route path="/feedback" element={<AdminFeedback />} />
-          {/* Route for Admin Tickets */}
           <Route path="/tickets" element={<AdminTickets />} />
-          {/* Route for Admin Gallery Items */}
           <Route path="/gallery-items" element={<AdminGalleryItems />} />
         </Routes>
       </div>
