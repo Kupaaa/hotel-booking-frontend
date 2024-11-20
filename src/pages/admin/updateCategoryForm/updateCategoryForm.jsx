@@ -142,10 +142,20 @@ export default function UpdateCategoryForm() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      // Show success message and wait for user confirmation
+      const result = await showSuccessMessage("Success", "Category updated successfully!");
+
+
       // Show success message and navigate
-      showSuccessMessage("Success", "Category updated successfully!");
-      resetForm();
-      navigate("/admin/categories");
+      // showSuccessMessage("Success", "Category updated successfully!");
+      // resetForm();
+      // navigate("/admin/categories");
+
+      if (result.isConfirmed) {
+        // If user pressed OK, reset the form and navigate
+        resetForm();
+        navigate("/admin/categories");  // Navigate after pressing OK}
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       showErrorMessage("Error", "Failed to update category. Please try again.");

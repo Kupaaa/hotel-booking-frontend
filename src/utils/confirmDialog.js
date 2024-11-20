@@ -14,11 +14,20 @@ export const confirmDelete = (itemName) => {
 };
 
 // Function to display success messages
+// export const showSuccessMessage = (title, text) => {
+//   Swal.fire({
+//     icon: "success",
+//     title: title,
+//     text: text,
+//   });
+// };
+
 export const showSuccessMessage = (title, text) => {
-  Swal.fire({
+  return Swal.fire({
     icon: "success",
     title: title,
     text: text,
+    showConfirmButton: true, // Ensures the "OK" button is displayed
   });
 };
 

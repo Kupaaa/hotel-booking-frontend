@@ -134,10 +134,17 @@ export default function UpdateGalleryItemForm() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      // Show success message and wait for user confirmation
+    const result = await showSuccessMessage("Success", "Gallery item updated successfully!");
+    
       // Show success message and navigate
-      showSuccessMessage("Success", "Gallery item updated successfully!");
-      resetForm();
-      navigate("/admin/gallery-items");
+      
+      if (result.isConfirmed) {
+        // If user clicked "OK", reset the form and navigate
+        resetForm();
+      navigate("/admin/gallery-items"); // Navigate to categories after confirmation
+      }
+
     } catch (error) {
       console.error("Error submitting form:", error);
       showErrorMessage(
