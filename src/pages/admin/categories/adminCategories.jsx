@@ -1,3 +1,4 @@
+// Importing required libraries, components, and icons
 import { useMemo, useState, useEffect } from "react";
 import { MaterialReactTable } from "material-react-table";
 import {
@@ -30,36 +31,72 @@ import {
 } from "../../../utils/confirmDialog";
 import TruncateText from "../../../components/TruncateText/TruncateText";
 
+// Main AdminCategoryTable Component
 export default function AdminCategoryTable() {
+  // State variables for managing categories, loading state, and total count
   const [categories, setCategories] = useState([]);
   const [categoryIsLoaded, setCategoryIsLoaded] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // Total count for pagination
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth(); // Custom hook for auth
   const navigate = useNavigate();
 
   // Pagination state
   const [pageIndex, setPageIndex] = useState(0); // Current page index
   const [pageSize, setPageSize] = useState(5); // Items per page
 
-  // Function to toggle the enabled status of a category
+  // Function to fetch categories from the backend
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem("token"); // Retrieve the token for authentication
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/categories`, // API endpoint for categories
+        {
+          params: { pageIndex, pageSize }, // Pass pagination params to the API
+          headers: { Authorization: `Bearer ${token}` }, // Include token in headers
+        }
+      );
+
+      // Update the state with fetched categories and total count
+      setCategories(response.data.categories || []);
+      setTotalCount(response.data.totalCount || 0);
+
+      // Mark the loading state as complete
+      setCategoryIsLoaded(true);
+      Swal.close();
+    } catch (error) {
+      setCategoryIsLoaded(true); // Ensure the loading spinner stops
+      Swal.close();
+      showErrorMessage("Error!", "Failed to fetch categories."); // Show error message
+    }
+  };
+
+  // Effect to fetch categories whenever pagination or authentication state changes
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+
+    Swal.fire({
+      title: "Loading...",
+      text: "Fetching categories...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    fetchCategories(); // Fetch the data
+  }, [isAuthenticated, isLoading, pageIndex, pageSize]);
+
+  // Function to toggle the enabled/disabled status of a category
   const toggleCategoryStatus = async (category) => {
     try {
       const token = localStorage.getItem("token");
-
-      // Make a PATCH request to toggle the category status
       const response = await axios.patch(
         `${import.meta.env.VITE_BACKEND_URL}/api/categories/${
           category.name
         }/toggle`,
-        {}, // No body required, just toggle
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update the local state with the updated category status
+      // Update the category status in the state
       setCategories((prevCategories) =>
         prevCategories.map((cat) =>
           cat._id === category._id
@@ -68,36 +105,42 @@ export default function AdminCategoryTable() {
         )
       );
 
-      // Show a success message after the category status is updated
+      // Show success message
       showSuccessMessage("Status Updated", "Category status has been updated.");
     } catch (error) {
-      console.error("Error toggling category status:", error);
-
-      // Revert the optimistic UI change in case of error
-      setCategories((prevCategories) =>
-        prevCategories.map((cat) =>
-          cat._id === category._id
-            ? { ...cat, disabled: !category.disabled }
-            : cat
-        )
-      );
-
-      // Show an error message
-      showErrorMessage(
-        "Error!",
-        error.response?.data?.message || "Failed to update category status."
-      );
+      console.error("Error toggling category status:", error); // Log error details
+      showErrorMessage("Error!", "Failed to update category status."); // Show error message
     }
   };
 
+  // Function to delete a category
+  const deleteCategory = async (name) => {
+    try {
+      const result = await confirmDelete(name); // Show confirmation dialog
+      if (result.isConfirmed) {
+        const token = localStorage.getItem("token");
+        await axios.delete(
+          `${import.meta.env.VITE_BACKEND_URL}/api/categories/${name}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        fetchCategories(); // Refresh the category list after deletion
+        showSuccessMessage("Deleted!", "The category has been deleted.");
+      }
+    } catch (error) {
+      console.error("Failed to delete category:", error); // Log error details
+      showErrorMessage("Error!", "Failed to delete category."); // Show error message
+    }
+  };
+
+  // Define the table columns
   const columns = useMemo(
     () => [
       {
         accessorKey: "tableNumber",
         header: "#",
         size: 50,
-        // Calculate the table number considering pageIndex and pageSize
-        Cell: ({ row }) => pageIndex * pageSize + row.index + 1,
+        Cell: ({ row }) => pageIndex * pageSize + row.index + 1, // Dynamically calculate row numbers
         enableSorting: false,
         enableColumnFilter: false,
       },
@@ -116,14 +159,14 @@ export default function AdminCategoryTable() {
         header: "Features",
         size: 200,
         Cell: ({ cell }) => (
-          <TruncateText text={cell.getValue().join(", ")} limit={50} />
+          <TruncateText text={cell.getValue().join(", ")} limit={50} /> // Truncate long features list
         ),
       },
       {
         accessorKey: "description",
         header: "Description",
         size: 200,
-        Cell: ({ cell }) => <TruncateText text={cell.getValue()} limit={50} />,
+        Cell: ({ cell }) => <TruncateText text={cell.getValue()} limit={50} />, // Truncate long descriptions
       },
       {
         accessorKey: "image",
@@ -131,14 +174,14 @@ export default function AdminCategoryTable() {
         size: 150,
         Cell: ({ cell }) => (
           <img
-            src={cell.getValue()}
+            src={cell.getValue()} // Display the image from the URL
             alt="Category"
-            style={{ width: 50, height: 50, objectFit: "cover" }}
+            style={{ width: 50, height: 50, objectFit: "cover" }} // Style the image
           />
         ),
       },
       {
-        accessorKey: "disabled", // This is the field we use for the status
+        accessorKey: "disabled",
         header: "Status",
         size: 100,
         Cell: ({ cell, row }) => (
@@ -152,12 +195,12 @@ export default function AdminCategoryTable() {
                 }
               >
                 <Switch
-                  checked={cell.getValue()}
-                  onChange={() => toggleCategoryStatus(row.original)}
+                  checked={cell.getValue()} // Reflect the current status
+                  onChange={() => toggleCategoryStatus(row.original)} // Toggle the status
                 />
               </Tooltip>
             }
-            label={cell.getValue() ? "Disabled" : "Enabled"}
+            label={cell.getValue() ? "Disabled" : "Enabled"} // Display the status label
           />
         ),
       },
@@ -182,7 +225,7 @@ export default function AdminCategoryTable() {
             <Tooltip title="Delete Category">
               <IconButton
                 color="secondary"
-                onClick={() => deleteItem(row.original.name)}
+                onClick={() => deleteCategory(row.original.name)}
               >
                 <MdDelete />
               </IconButton>
@@ -191,108 +234,31 @@ export default function AdminCategoryTable() {
         ),
       },
     ],
-    [pageIndex, pageSize] // Add these dependencies so it recalculates when pagination changes
+    [pageIndex, pageSize]
   );
 
-  // Fetch categories from backend
-  const fetchCategories = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/categories`,
-        {
-          params: { pageIndex, pageSize }, // Pass pagination params
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Set the categories and total count
-      setCategories(response.data.categories);
-      setTotalCount(response.data.totalCount); // Update total count for pagination
-
-      // If the current page exceeds the total count, go to the previous page
-      if ((pageIndex + 1) * pageSize > response.data.totalCount) {
-        setPageIndex(pageIndex - 1); // Go to the previous page
-      }
-
-      setCategoryIsLoaded(true);
-      Swal.close();
-    } catch (error) {
-      setCategoryIsLoaded(true);
-      Swal.close();
-      showErrorMessage(
-        "Error!",
-        error.response?.data?.message || "Failed to fetch categories."
-      );
-    }
-  };
-
-  // Fetch categories when component is mounted or page size/page index changes
-  useEffect(() => {
-    if (isLoading || !isAuthenticated) return;
-
-    Swal.fire({
-      title: "Loading...",
-      text: "Fetching categories...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
-
-    fetchCategories();
-  }, [isAuthenticated, isLoading, pageIndex, pageSize]);
-
-  // Delete a category
-  const deleteItem = async (name) => {
-    try {
-      const result = await confirmDelete(name);
-      if (result.isConfirmed) {
-        const token = localStorage.getItem("token");
-        const url = `${
-          import.meta.env.VITE_BACKEND_URL
-        }/api/categories/${name}`;
-        await axios.delete(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Re-fetch categories after deletion to ensure everything is up to date
-        fetchCategories();
-
-        showSuccessMessage("Deleted!", "The category has been deleted.");
-      }
-    } catch (error) {
-      console.error("Failed to delete item:", error);
-      showErrorMessage(
-        "Error!",
-        error.response?.data?.message ||
-          "Failed to delete item. Please try again."
-      );
-    }
-  };
-
-  // Fast navigation to first and last pages
-  const handleFirstPage = () => {
-    setPageIndex(0);
-  };
-
-  const handleLastPage = () => {
-    const lastPage = Math.floor(totalCount / pageSize);
-    setPageIndex(lastPage);
-  };
-
+  // Pagination handlers
   const handleChangePage = (event, newPage) => {
-    setPageIndex(newPage);
+    setPageIndex(newPage); // Update the page index
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setPageSize(Number(event.target.value));
-    setPageIndex(0); // Reset page index when rows per page changes
+    setPageSize(Number(event.target.value)); // Update the page size
+    setPageIndex(0); // Reset to the first page
+  };
+
+  const handleFirstPage = () => {
+    setPageIndex(0); // Navigate to the first page
+  };
+
+  const handleLastPage = () => {
+    const lastPage = Math.floor(totalCount / pageSize); // Calculate the last page index
+    setPageIndex(lastPage); // Navigate to the last page
   };
 
   return (
     <div className="container mx-auto p-5">
-      {/* Tooltip added for the Add Category button */}
+      {/* Floating action button to add a new category */}
       <Tooltip title="Add New Category">
         <Fab
           color="primary"
@@ -305,23 +271,25 @@ export default function AdminCategoryTable() {
         </Fab>
       </Tooltip>
 
+      {/* Table heading */}
       <h1 className="text-3xl font-bold mb-6 text-center">Category Table</h1>
 
+      {/* Conditional rendering of the table or loader */}
       {categoryIsLoaded ? (
         <>
           <MaterialReactTable
-            columns={columns}
-            data={categories} // Directly use the data from the backend
-            enablePagination={false}
+            columns={columns} // Pass the table columns
+            data={categories} // Pass the category data
+            enablePagination={false} // Disable internal pagination
           />
           <TablePagination
             component="div"
-            count={totalCount} // Use the totalCount from the backend
-            page={pageIndex}
-            rowsPerPage={pageSize}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25, 100]} // Customize rows per page options
+            count={totalCount} // Total number of items
+            page={pageIndex} // Current page index
+            rowsPerPage={pageSize} // Rows per page
+            onPageChange={handleChangePage} // Handle page change
+            onRowsPerPageChange={handleChangeRowsPerPage} // Handle rows per page change
+            rowsPerPageOptions={[5, 10, 25, 100]} // Options for rows per page
             ActionsComponent={() => (
               <Box display="flex" alignItems="center" justifyContent="center">
                 <IconButton
@@ -338,13 +306,13 @@ export default function AdminCategoryTable() {
                 </IconButton>
                 <IconButton
                   onClick={(event) => handleChangePage(event, pageIndex + 1)}
-                  disabled={pageIndex >= Math.floor(totalCount / pageSize)}
+                  disabled={pageIndex >= Math.ceil(totalCount / pageSize) - 1}
                 >
                   <ArrowForward />
                 </IconButton>
                 <IconButton
                   onClick={handleLastPage}
-                  disabled={pageIndex >= Math.floor(totalCount / pageSize)}
+                  disabled={pageIndex >= Math.ceil(totalCount / pageSize) - 1}
                 >
                   <LastPage />
                 </IconButton>
