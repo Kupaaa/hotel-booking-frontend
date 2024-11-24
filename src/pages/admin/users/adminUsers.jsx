@@ -274,7 +274,7 @@ export default function AdminUsers() {
                 />
               }
               label={
-                <span style={{ color: cell.getValue() ? "red" : "green" }}>
+                <span style={{ color: cell.getValue() ? "red" : "" }}>
                   {cell.getValue() ? "Blocked" : "Unblocked"}
                 </span>
               }
