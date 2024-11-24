@@ -26,7 +26,7 @@ export default function UpdateUserForm() {
     email: userState.email || "",
     phone: userState.phone || "",
     whatsApp: userState.whatsApp || "",
-    role: userState.role || "Customer",
+    role: userState.type || "Customer", // Changed to use 'role' directly
     imagePreview: userState.image || null, // Initial image preview from userState
     image: null, // Image file to be uploaded
   };
@@ -129,7 +129,7 @@ export default function UpdateUserForm() {
         lastName: formState.lastName,
         phone: formState.phone,
         whatsApp: formState.whatsApp,
-        role: formState.role,
+        role: formState.role, // Changed from 'type' to 'role' to match backend field
         image: imageUrl,
       };
 
@@ -267,7 +267,7 @@ export default function UpdateUserForm() {
             )}
           </div>
 
-          {/* Role Selector */}
+      {/* Role Selector */}
           <div>
             <label className="block text-gray-700">Role</label>
             <select
@@ -279,9 +279,8 @@ export default function UpdateUserForm() {
                 errors.role ? "border-red-500" : "border-gray-300"
               }`}
             >
-              <option value="" label="Select role" />
-              <option value="Admin" label="Admin" />
-              <option value="Customer" label="Customer" />
+              <option value="Admin">Admin</option>
+              <option value="Customer">Customer</option>
             </select>
             {errors.role && (
               <p className="text-red-500 text-sm">{errors.role}</p>
