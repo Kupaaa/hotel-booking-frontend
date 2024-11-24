@@ -17,6 +17,7 @@ import UserTag1 from "../../components/userData/userTag1";
 import "./AdminPage.css";
 import AddGalleryItemForm from "../admin/addGalleryItemsForm/addGalleryItems";
 import UpdateGalleryItemForm from "../admin/updateGalleryItemForm/updateGalleryItemForm";
+import AddUserForm from "../admin/addUserForm/addUserForm";
 
 export default function AdminPage() {
   // Destructure isLoading and isAuthenticated from custom authentication hook
@@ -113,6 +114,8 @@ export default function AdminPage() {
           <Route path="/bookings" element={<AdminBookings />} />
           <Route path="/rooms" element={<AdminRooms />} />
           <Route path="/users" element={<AdminUsers />} />
+          <Route path="/add-user" element={<AddUserForm />} />
+
           <Route path="/categories" element={<AdminCategories />} />
           <Route path="/add-category" element={<AddCategoryForm />} />
           <Route

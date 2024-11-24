@@ -38,7 +38,7 @@ export default function AdminUsers() {
   // Fetch users from backend
   const fetchUsers = async () => {
     try {
-      setIsLoaded(false);
+      setIsLoaded(false); // Indicate loading state
       Swal.fire({
         title: "Loading...",
         text: "Fetching user data...",
@@ -46,11 +46,12 @@ export default function AdminUsers() {
         didOpen: () => Swal.showLoading(),
       });
 
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token"); // Retrieve token from localStorage
       if (!token) {
         throw new Error("Authentication token not found.");
       }
 
+      // Fetch data from API
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/users`,
         {
@@ -59,10 +60,10 @@ export default function AdminUsers() {
         }
       );
 
-      setUsers(response.data.users || []);
-      setTotalCount(response.data.totalCount || 0);
-      setIsLoaded(true);
-      Swal.close();
+      setUsers(response.data.users || []); // Update user list
+      setTotalCount(response.data.totalCount || 0); // Update total user count
+      setIsLoaded(true); // Data loading complete
+      Swal.close(); // Close loading modal
     } catch (error) {
       setIsLoaded(true);
       console.error("Failed to fetch users:", error);
@@ -72,7 +73,7 @@ export default function AdminUsers() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(); // Fetch users whenever pageIndex or pageSize changes
   }, [pageIndex, pageSize]);
 
   // Delete a user
@@ -81,20 +82,20 @@ export default function AdminUsers() {
       // Confirm deletion with a custom confirmation dialog
       const result = await Swal.fire({
         title: "Are you sure?",
-        text: `This will permanently delete the user`,
+        text: `This will permanently delete the user ${name}.`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Yes, delete it!",
       });
 
       if (result.isConfirmed) {
-        const token = localStorage.getItem("token"); // Get auth token from local storage
+        const token = localStorage.getItem("token"); // Get auth token
 
-        // Make DELETE request to the backend API to delete the user by email
+        // Send DELETE request to backend
         await axios.delete(
           `${import.meta.env.VITE_BACKEND_URL}/api/users/${encodeURIComponent(
             email
-          )}`, // Backend now expects email
+          )}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -102,12 +103,12 @@ export default function AdminUsers() {
           }
         );
 
-        fetchUsers(); // Refresh the user list after deletion
-        showSuccessMessage("Deleted!", "The user has been deleted.", "success"); // Show success message
+        fetchUsers(); // Refresh the user list
+        showSuccessMessage("Deleted!", "The user has been deleted.", "success");
       }
     } catch (error) {
       console.error("Failed to delete user:", error);
-      showErrorMessage("Error", "Failed to delete user.", "error"); // Show error message if the request fails
+      showErrorMessage("Error", "Failed to delete user.", "error");
     }
   };
 
@@ -116,14 +117,12 @@ export default function AdminUsers() {
     try {
       const token = localStorage.getItem("token");
 
-      // Call the backend API
       const response = await axios.patch(
         `${import.meta.env.VITE_BACKEND_URL}/api/users/${user.email}/toggle`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update the user's status in the frontend state
       setUsers((prevUsers) =>
         prevUsers.map((existingUser) =>
           existingUser.email === user.email
@@ -132,7 +131,6 @@ export default function AdminUsers() {
         )
       );
 
-      // Show success message
       showSuccessMessage(
         "Status Updated",
         `User status has been ${
@@ -178,6 +176,7 @@ export default function AdminUsers() {
     }
   };
 
+  // Define table columns with tooltips
   const columns = useMemo(
     () => [
       {
@@ -195,13 +194,15 @@ export default function AdminUsers() {
         header: "WhatsApp",
         size: 150,
         Cell: ({ cell }) => (
-          <a
-            href={`https://wa.me/${cell.getValue()}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {cell.getValue()}
-          </a>
+          <Tooltip title="Open WhatsApp chat">
+            <a
+              href={`https://wa.me/${cell.getValue()}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {cell.getValue()}
+            </a>
+          </Tooltip>
         ),
       },
       { accessorKey: "type", header: "Type", size: 100 },
@@ -210,51 +211,78 @@ export default function AdminUsers() {
         header: "Image",
         size: 150,
         Cell: ({ cell }) => (
-          <img
-            src={cell.getValue()}
-            alt="User"
-            style={{
-              width: 50,
-              height: 50,
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
+          <Tooltip title="User profile image">
+            <img
+              src={cell.getValue()}
+              alt="User"
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          </Tooltip>
         ),
       },
       {
         accessorKey: "disabled",
-        header: "Enabled/Disabled",
+        header: "Status",
         size: 100,
         Cell: ({ cell, row }) => (
           <FormControlLabel
             control={
-              <Switch
-                checked={cell.getValue()}
-                onChange={() => toggleUserStatus(row.original)}
-                disabled={row.original.blocked} // Disable if user is blocked
-              />
+              <Tooltip
+                title={
+                  row.original.blocked
+                    ? "User is blocked and cannot be toggled"
+                    : cell.getValue()
+                    ? "Disable this user"
+                    : "Enable this user"
+                }
+              >
+                <Switch
+                  checked={cell.getValue()} // Reflect the current "disabled" status
+                  onChange={() => toggleUserStatus(row.original)} // Toggle the status
+                  disabled={row.original.blocked} // Disable toggle if the user is blocked
+                />
+              </Tooltip>
             }
-            label={cell.getValue() ? "Disabled" : "Enabled"}
+            label={cell.getValue() ? "Disabled" : "Enabled"} // Dynamically set the label
           />
         ),
       },
+
       {
         accessorKey: "blocked",
         header: "Blocked",
         size: 100,
         Cell: ({ cell, row }) => (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={cell.getValue()}
-                onChange={() => toggleBlockedStatus(row.original)}
-              />
+          <Tooltip
+            title={
+              cell.getValue()
+                ? "Click to unblock this user"
+                : "Click to block this user"
             }
-            label={cell.getValue() ? "Blocked" : "Unblocked"}
-          />
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={cell.getValue()}
+                  onChange={() => toggleBlockedStatus(row.original)}
+                  disabled={row.original.type === "Admin"} // Disable switch for Admins
+                />
+              }
+              label={
+                <span style={{ color: cell.getValue() ? "red" : "green" }}>
+                  {cell.getValue() ? "Blocked" : "Unblocked"}
+                </span>
+              }
+            />
+          </Tooltip>
         ),
       },
+
       {
         id: "actions",
         header: "Actions",
@@ -276,7 +304,9 @@ export default function AdminUsers() {
             <Tooltip title="Delete User">
               <IconButton
                 color="secondary"
-                onClick={() => deleteUser(row.original.email)}
+                onClick={() =>
+                  deleteUser(row.original.email, row.original.firstName)
+                }
               >
                 <MdDelete />
               </IconButton>
